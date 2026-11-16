@@ -229,3 +229,9 @@ __pycache__/
 # Data files
 data/
 *.csv
+*.zip
+repomix-output.md
+
+# MACOS files
+.DS_Store/
+_MACOSX/

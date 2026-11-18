@@ -1,311 +1,152 @@
 # Business Problem Statement
 
-## Document status and evidence convention
+## Status and evidence convention
 
-This statement frames Issue #1 for the Schneider Electric forecasting project.
-It is based on the X-HEC Data Challenge presentation, *From raw material prices
-to winning the data center era* (November 2026, slides 12–21), and inspection
-of the repository.
+This statement reflects the X-HEC Data Challenge and the latest discussion with Schneider Electric.
 
-- **Confirmed** means explicitly stated in the challenge presentation or
-  directly observed in this repository. A presentation describing an input
-  does not confirm that its data file has been delivered.
-- **Proposed** means a project approach to evaluate; it is not a confirmed
-  Schneider Electric policy or current process.
-- **Validation required** means the challenge team or client must confirm the
-  information before it is treated as fact or used for a recommendation.
+- **Confirmed** describes challenge requirements, client feedback, or locally observed data, not client approval.
+- **Proposed** describes methods and decision support to evaluate.
+- **Limitation / pending clarification** identifies evidence not available or data not yet validated.
 
 ## 1. Business context and problem description
 
-**Confirmed — challenge context.** The challenge focuses on custom-engineered
-medium-voltage switchgear for data-center and other customers, including RM6
-and RM AirSeT. Engineer-to-order (ETO) quotations may fix prices for 3, 6, or
-9 months, while raw-material costs can move during the quotation or contract
-period. The presentation identifies copper, carbon steel, insulating
-materials, electronics, PPI, and a broader raw-material basket as relevant
-cost drivers. It describes RM AirSeT as SF6-free and identifies its higher
-cost structure and thinner margin as a commercial challenge.
+**Central business problem:** How can Schneider Electric accurately forecast future raw-material and product costs to protect gross margins while maintaining competitive pricing and supporting the transition to SF6-free products?
 
-Two linked problems motivate the project:
+Margin protection is the primary business objective, supported by accurate and reliable material and BOM cost forecasts. Forecast costs and uncertainty should inform actionable ETO pricing recommendations while balancing target profitability and commercial competitiveness. The project also supports a commercial strategy for SF6-free adoption.
 
-1. **ETO pricing and margin protection:** uncertainty in material costs can
-   expose a fixed-price offer to cost increases after quotation. A quotation
-   that includes too much risk premium can also be less competitive.
-2. **SF6-free adoption:** in markets where regulation does not require the
-   switch, customers need a persuasive economic and commercial reason to
-   adopt SF6-free switchgear.
+**Product distinction.** Available cost inputs refer to RM6 and RM AirSeT configurations; the strategy challenge refers to SM6 and SM AirSeT. Do not assume these products or costs are interchangeable. Schneider Electric must validate product and configuration mappings.
 
-**Problem statement.** How can historical raw-material information be used
-to estimate material and BOM cost exposure 3, 6, and 9 months ahead, support
-competitive and margin-aware ETO quotation terms, and inform an evidence-based
-commercial strategy for profitable SF6-free switchgear adoption?
-
-This is a decision-support project. Forecasts are not automatic prices, a
-guarantee of future supplier costs, or proof of customer savings.
+Forecasts support decisions; they are not automatic prices or proof of customer adoption, savings, or margin improvement.
 
 ## 2. Business decisions supported
 
-### ETO offer decisions
+### ETO pricing and margin protection
 
-Subject to validated cost and product inputs, the analysis is intended to
-inform:
+Subject to validated costs, forecasts and scenarios may inform quotation prices, validity periods, indexation triggers, cost-risk buffers, and the trade-off between target margins and competitive selling prices for supported configurations.
 
-- Whether the material-cost outlook supports a price adjustment or risk
-  buffer for each quotation horizon.
-- Whether quotation validity should differ by horizon or risk scenario.
-- Whether an indexation trigger or other contractual protection merits
-  consideration.
-- How raw-material scenarios affect RM6 and RM AirSeT BOM cost estimates.
-- How to balance margin exposure against offer competitiveness.
+The synthetic RMU benchmark and provisional RM6 competitor/teardown benchmark may inform competitive comparisons. Verify comparability, price meaning, provenance, and permitted use first. Recommendations are scenario-based decision support, not empirically validated margin optimization; approved prices and contract terms remain business decisions.
 
-The project will not determine approved prices, target margins, or contract
-terms without client-provided commercial rules and approval.
+Accurate and reliable forecasts are essential to effective margin protection. Given an estimated total cost of goods sold (COGS) and a target gross margin (as a fraction), proposed decision-support calculations are:
 
-### SF6-free market and adoption decisions
+- **Target quotation price:** `Quotation_price = Forecasted_COGS / (1 - Target_gross_margin)`. This estimates the price required to achieve the target margin at forecasted cost.
+- **Competitive price gap:** `Price_gap_pct = 100 * (Quotation_price - Competitor_price) / Competitor_price`. This assesses whether the margin-protecting quotation is competitive against a comparable offer.
+- **Gross margin at competitor price:** `GM_at_competitor_price = (Competitor_price - Forecasted_COGS) / Competitor_price`. This indicates whether matching the competitor price would meet the target gross margin.
+- **Risk-adjusted quotation:** `Risk_buffer = P90_COGS - P50_COGS`; `Risk_adjusted_quotation = (P50_COGS + Risk_buffer) / (1 - Target_gross_margin)`. This illustrates how cost uncertainty could inform a risk-adjusted quotation strategy.
 
-For markets verified to have no applicable SF6 mandate, the analysis is
-intended to inform:
+These calculations require **estimated total COGS**, not only partial BOM costs or mass-weighted proxy indices. Product-level cost quantiles must account for dependencies between material prices. Competitor prices must be comparable in product configuration, market, currency, and commercial conditions. These are proposed decision-support mechanisms, not validated Schneider Electric pricing policies.
 
-- Which markets, customer segments, or use cases warrant prioritization.
-- How the SM6-to-SM AirSeT cost gap and total cost of ownership (TCO) affect
-  the customer proposition.
-- How verified customer decarbonization priorities and SF6 lifecycle
-  considerations may support adoption.
-- Which pricing, value-proposition, and go-to-market levers merit testing.
-- How raw-material cost convergence or divergence could affect relative
-  product economics.
+### SF6-free adoption
 
-**Validation required.** Market eligibility, regulation, customer evidence,
-product performance, lifecycle claims, competitor position, and approved
-product economics must be verified before recommendations are made.
+**Priority markets from client discussion:** European Union (including the regulation-driven transition), United Kingdom and broader Europe, United States, and China. Focus the initial assessment on these markets rather than an exhaustive global analysis.
 
-## 3. Current business baseline and proposed naive forecasting baseline
+Assess regulation, competitive positioning, product economics, TCO, and customer value propositions. Verify market-specific regulatory requirements before making recommendations.
 
-### Current business baseline
+**Limitation.** Current inputs do not establish adoption rates, customer preferences, market eligibility, complete product TCO, or realized outcomes. Distinguish evidence-based recommendations from unvalidated adoption hypotheses.
 
-**Confirmed.** The presentation describes the risk of fixed-term ETO offers
-when material prices change and asks for a model to support offer decisions.
-It does not provide a measured existing forecasting process, current quoting
-rule, historical forecast error, realized margin erosion, current risk buffer,
-or SF6-free adoption baseline.
+## 3. Business baseline and forecasting methodology
 
-**Validation required.** Establish the actual current-state comparator with
-the business: current price-setting and indexation practices; quote and
-contract validity; historical quotation-time cost assumptions; realized
-material/BOM costs; offer, win/loss, and margin outcomes; and the current
-product migration or adoption rate. Until those inputs are supplied, no
-quantitative improvement over current practice can be claimed.
+**Limitation.** Available data do not include ETO quote history, current pricing policy, selling prices, realized order costs, or gross-margin and adoption outcomes. Current performance and actual improvement over existing practice therefore cannot yet be quantified.
 
-### Proposed naive forecasting baseline
+**Proposed methodology.** Experiment with suitable forecasting methods rather than preselecting a final model. Compare candidates with a transparent naive baseline: last observation carried forward (LOCF) for each validated series, holding its latest eligible observation constant for 3, 6, and 9 months. Use derived series only when their inputs were available at origin. For BOM, LOCF holds the latest eligible cost estimate or proxy index; it does not make an incomplete BOM complete.
 
-**Proposed.** Use a last-observation-carried-forward (LOCF) forecast for each
-validated material-price series: at each historical forecast origin, carry
-the most recently observed price forward unchanged for 3, 6, and 9 months.
-Apply the same fixed-price assumption to a BOM index, using validated,
-unchanged product BOM weights and the latest available material costs. This
-baseline is transparent and tests whether more complex forecasts add value
-beyond assuming no change from the latest observed cost level.
+Conduct rigorous rolling-origin, time-ordered backtesting for all three horizons. Each fold uses only information available at its cutoff and consistent targets and availability rules. Evaluate point accuracy and uncertainty calibration. Explain and reproduce the forecasting, evaluation, and validation process; assess process quality, not just final predicted values.
 
-The baseline must be recomputed within each time-ordered backtest fold using
-only information available at that fold's forecast origin. Any missing
-observations, non-monthly series, product-weight changes, or unavailable
-targets require a documented rule before scoring. A probabilistic naive
-baseline is not yet specified; if required, its interval method must be
-defined using training-fold information only and assessed for calibration.
+**Proposed inflation experiment.** Where an appropriate and permitted inflation series is available, compare nominal-price forecasting, inflation-adjusted forecasting transformed back to nominal terms, and nominal forecasting with inflation as an exogenous feature. Use origin-available inflation data and rolling backtests to determine whether adjustment improves performance. Present final pricing recommendations in relevant nominal currency terms.
 
-## 4. Primary business KPI and machine-learning metrics
+## 4. Primary business KPI and model metrics
 
-### Primary business KPI
+### Primary KPI: gross margin and gross-margin erosion
 
-**Proposed primary KPI:** ETO gross-margin erosion attributable to material
-cost movement during the quoted fixed-price period, reported per unit and, if
-validated order quantities are available, per order. Report both currency
-impact and percentage-point impact on gross margin against the quotation-time
-cost basis.
+For comparable revenue and cost scopes:
 
-This KPI connects cost forecasting to the margin-protection objective. Its
-calculation requires an agreed definition of quotation-time cost, realized
-or scenario BOM cost, selling price, product configuration, and applicable
-margin treatment.
+- `GM_quote = (Revenue_quote - COGS_quote) / Revenue_quote`
+- `GM_realized = (Revenue_realized - COGS_realized) / Revenue_realized`
+- `GM_erosion = GM_quote - GM_realized`
 
-**Validation required.** The client must confirm that these fields are
-available, the margin definition and aggregation level, how to treat price
-adjustments/indexation, and which baseline offer policy is the comparator.
-Without them, report forecasted BOM-cost movement as a proxy; do not describe
-it as realized or avoided margin erosion.
+With unchanged fixed selling price, isolated per-unit material cost erosion is `material_cost_realized - material_cost_quote`; its percentage-point margin impact is `100 * material_cost_erosion / Revenue_quote_per_unit`, assuming comparable cost scope and no offsetting changes.
 
-### Corresponding machine-learning metrics
+**Limitation.** Realized margin erosion and actual margin improvement cannot currently be measured: the reviewed inputs lack quotation, sales, realized-cost, order, and approved margin-definition data. Do not claim realized or avoided margin impact without them.
 
-**Proposed primary model metric:** mean absolute error (MAE) of the forecast
-RM6/RM AirSeT BOM cost per unit, evaluated separately at 3, 6, and 9 months
-in the agreed currency or cost-index units. Compare the model with the naive
-baseline using identical targets, forecast origins, and folds. Where a
-validated business weighting scheme exists, also report a pre-agreed
-weighted aggregate; do not invent weights.
+### Operational forecast metrics
 
-**Proposed supporting metrics:**
+- Material and partial BOM forecast error (MAE; MASE and RMSE as supporting metrics) versus LOCF, by target and horizon.
+- Cost-underestimation frequency and magnitude when P50 or a selected scenario is below subsequent observed cost.
+- P10/P50/P90 quantile loss and empirical P10–P90 coverage by target and horizon; verify `p10 <= p50 <= p90`.
 
-- Material-level MAE and mean absolute scaled error (MASE), by target and
-  horizon, to show errors across materials and relative to the naive
-  baseline.
-- RMSE as a supplementary measure that emphasizes larger forecast errors.
-- For P10/P50/P90 forecasts, quantile loss and empirical interval coverage,
-  by horizon and target. Verify that `p10 <= p50 <= p90`.
-- BOM-cost error and forecast-versus-naive comparisons in units that can be
-  interpreted alongside the business KPI.
+These are operational proxies, not substitutes for realized margin or adoption outcomes. Business aggregation and weights require validation.
 
-Use time-ordered rolling backtests and exclude information that would not
-have been available at each forecast origin. Metric selection and any
-aggregation weights are **proposed** until confirmed by the project
-stakeholders. No numerical pass threshold is specified in the presentation.
+## 5. Data and BOM cost methodology
 
-The SF6-free commercial objective is complementary, not reducible to a price
-forecast metric. Potential business measures include qualified opportunity
-conversion, adoption/migration rate, and incremental gross profit; each
-requires an agreed definition, observation period, and suitable customer or
-market data before it can be evaluated.
+**Confirmed locally, at a high level:** monthly raw-material and energy series, BOM mappings, auxiliary metal/epoxy/steel inputs, a synthetic RMU benchmark, a provisional RM6 competitor/teardown benchmark, and supplier financial files. Core material data include direct prices, FX, derived EUR prices, PPI proxies, and intentionally empty licensed series. Energy data may be explanatory inputs, not BOM prices. Detailed schemas and series coverage belong in Issue #2.
 
-## 5. Available data
+`Data/` is excluded from Git. Local presence does not authorize publication or redistribution. Use benchmark inputs only after verifying comparability and permissions.
 
-### Confirmed in the repository
+**BOM limitations / pending clarification.** `share_pct` represents mass share, not product-cost share. Material coverage is incomplete, and local BOM representations conflict on labels and quantities. Schneider Electric has acknowledged inconsistencies and expects to clarify them. Do not resolve conflicts or infer missing materials before that clarification; report omitted coverage.
 
-The repository currently contains project scaffolding and documentation. No
-challenge dataset, product BOM file, quotation history, realized costs,
-margin outcomes, or market/customer research files were present during
-inspection. No data dictionary or schema is available in the repository at
-this stage.
+**Preferred proposed method — partial monetary BOM index.** For materials with validated quantities and compatible, approved unit prices:
 
-### Described by the challenge presentation; file availability unconfirmed
+`partial_BOM_cost_t = sum_i(quantity_i * unit_price_i,t)`
 
-The presentation describes a 10-year synthetic benchmark panel and mentions:
+Convert units and currencies consistently, then normalize to an agreed base:
 
-- Raw-material price proxies, including copper, carbon steel, insulating
-  materials, and electronics.
-- PPI and a full raw-material basket.
-- Product configurations from 1F to 4F.
-- Supplier balance-sheet information.
-- Product benchmarks and Schneider Electric product raw-material
-  percentages or weights.
-- Competitor pricing landscape.
+`partial_BOM_index_t = 100 * partial_BOM_cost_t / partial_BOM_cost_base`
 
-It also specifies forecast CSV fields including target type and identifier,
-region, origin and target month, horizon, unit, P10/P50/P90, model name, and
-AI-tool disclosure.
+Disclose included materials, omissions, configuration, units, currency, and base month. This is partial, not complete product cost, until relevant quantities and baseline prices are confirmed.
 
-These are **confirmed descriptions in the presentation**, not confirmation
-of delivered files, exact columns, measurement units, coverage by target,
-license, or suitability for every decision. The data inventory and definitions
-must be established before analysis.
+**Fallback proposed method — mass-weighted proxy.** If monetary costing is infeasible, normalize eligible price relatives to 100 and combine using validated masses or mass shares. Label it a proxy; never represent mass shares as cost weights.
 
-### Data required or to validate
+Direct prices and PPI proxies require different treatment:
 
-- Actual data files, schema, provenance, usage rights, and data owner.
-- Series frequency, units, currency, region, aggregation, missing values, and
-  any revisions or synthetic-data generation rules.
-- BOM composition, material weights, product/configuration mapping, costing
-  rules, and effective dates.
-- For margin evaluation: quotation prices, quotation-time cost estimates,
-  realized costs, order quantities, and the agreed margin definition.
-- For commercial strategy: product cost gap, relevant customer/segment
-  evidence, competitor information, market-specific regulatory status, and
-  verified TCO or lifecycle inputs.
+- **Direct prices:** convert compatible prices to common currency and physical units, then multiply by validated quantities. A market benchmark is not necessarily a Schneider purchase price.
+- **PPI proxies:** forecast relative index movement; do not add index points to currency prices. Apply relative movement to validated baseline spend for monetary estimates; without spend data, use only in a labelled proxy.
 
-## 6. Frequency, historical coverage, and forecasting horizons
+## 6. Frequency, coverage, and forecast origin
 
-- **Historical coverage — confirmed as described:** 2017–2026 (10 years) for
-  the synthetic benchmark panel.
-- **Data frequency — validation required:** the presentation expresses
-  origins and targets as months and gives a monthly CSV example, but the
-  actual cadence of every supplied series is not confirmed. Confirm whether
-  data are monthly, consistently sampled, and aligned before modeling.
-- **Forecast horizons — confirmed challenge requirement:** 3, 6, and 9
-  months ahead.
-- **Forecast origin and final observation — validation required:** the
-  example filename uses `202609`, but this is an example, not confirmation
-  that September 2026 is the final available observation or the required
-  submission origin.
+**Confirmed:** core RM and energy calendars are monthly, November 2016 through October 2026. Individual series have gaps and different end dates; most core RM price series end in September 2026. Auxiliary files have differing coverage and may include provisional, licensed, or unverified data.
 
-For monthly series, the intended target months are origin month plus 3, 6,
-and 9 calendar months. Confirm the origin-month convention, target alignment,
-and treatment of incomplete periods when the data are received.
+**Required challenge origin: September 2026.**
 
-## 7. Technical and business deliverables
+| Horizon | Target month |
+|---|---|
+| 3 months | December 2026 |
+| 6 months | March 2027 |
+| 9 months | June 2027 |
+
+Exclude October and November 2026 observations from all inputs and features, including energy, FX, auxiliary, and revised data. A September value in a later download is eligible only if it was published by the September decision cutoff. Account for publication lags and revisions; do not backfill with later releases. Validate the precise cutoff and apply the same availability rule in backtests.
+
+## 7. Uncertainty and commercial interpretation
+
+**Proposed:** provide P10, P50, and P90 for every target and horizon. For costs, P10 is a lower-cost outcome, P50 the median, and P90 a higher-cost outcome. If calibrated, about 10%, 50%, and 90% of outcomes respectively fall below those quantiles; they are scenarios, not guarantees.
+
+`P90 - P50` may be considered as a potential adverse cost-risk buffer relative to the median. Its confidence, use, and relationship to quotation terms require business validation; it is not an automatic surcharge. Evaluate quantile loss and empirical coverage by target and horizon. Express final pricing recommendations in relevant nominal currency terms.
+
+## 8. Deliverables and success criteria
 
 ### Technical deliverables
 
-1. Data inventory and data dictionary documenting verified inputs, units,
-   frequency, provenance, limitations, and transformations.
-2. Reproducible, time-aware analysis and forecasting workflow.
-3. Naive LOCF baseline and comparable model evaluations using rolling
-   backtesting for all validated targets and horizons.
-4. P10/P50/P90 forecasts, with uncertainty diagnostics and ordered quantiles.
-5. Forecast-to-BOM cost calculation for RM6 and RM AirSeT where the supplied
-   inputs support it; document assumptions and units.
-6. Forecast submission CSV following the challenge schema and naming
-   convention confirmed for the actual forecast origin.
-7. Documented dependencies, reproducibility instructions, and automated
-   checks as appropriate to the final project scope.
-8. A Streamlit decision tool only if supported by validated inputs and
-   implementation scope.
+- Validated input inventory covering availability, units, licensing, and limitations.
+- September 2026 forecasts for validated targets at 3, 6, and 9 months, with candidate-model comparison against LOCF and leakage-safe rolling-origin backtests.
+- P10/P50/P90 forecasts with point-accuracy and uncertainty evaluation.
+- Partial monetary BOM index where feasible; otherwise a labelled mass-weighted proxy.
+- Challenge CSV and explainable, reproducible workflow using authorized data.
 
 ### Business deliverables
 
-1. Horizon-specific ETO offer guidance covering cost exposure and, where
-   evidence permits, price adjustment, quotation validity, indexation
-   triggers, and risk buffers across scenarios.
-2. SF6-free market strategy identifying validated target segments, customer
-   value proposition, economic considerations, commercial levers, and
-   conditions for success.
-3. Business presentation communicating evidence, uncertainty, limitations,
-   recommendations, and next steps.
+- Scenario-based ETO cost exposure and pricing decision support that balances margin and competitiveness without claiming validated margin optimization.
+- SF6-free strategy for priority markets, distinguishing verified evidence from adoption hypotheses.
+- Business presentation conveying recommendations, uncertainty, and validation needs; a decision tool if scope and approved inputs permit.
 
-Recommendations should distinguish observed data, model outputs, business
-assumptions, and client decisions.
+Success means models are rigorously compared with LOCF using origin-available data; point accuracy and calibration are evaluated by horizon; BOM indices disclose method and coverage; the workflow is explainable and reproducible; and strategy recommendations are evidence-based or explicitly hypotheses. The challenge weights forecasting and strategy quality equally. Numerical thresholds require stakeholder agreement.
 
-## 8. Success criteria
+## Open questions for Schneider Electric
 
-The project will be considered successful when:
+1. Which BOM representation and product/configuration mapping is authoritative, and can unresolved materials and conflicting quantities be reconciled?
+2. What September 2026 decision cutoff, publication vintages, and inflation series are approved?
+3. Which materials, regions, currencies, base month, and baseline prices or spend weights define the BOM index?
+4. How, if at all, do RM6/RM AirSeT cost references map to SM6/SM AirSeT products in the adoption strategy?
+5. Can protected quotation, cost, sales, order, and margin data be provided, with an approved margin-erosion definition and current-business comparator?
+6. Which priority-market regulatory/customer evidence, competitor inputs, TCO assumptions, licences, and acceptance thresholds are approved?
 
-1. **Coverage:** every validated priceable material target and required BOM
-   index has forecasts at 3, 6, and 9 months, or an explicit documented
-   reason for omission.
-2. **Forecast evidence:** rolling backtests compare the proposed models with
-   the naive baseline at each horizon using agreed metrics and leakage-safe
-   forecast origins. Performance is reported honestly, including cases where
-   models do not outperform the baseline.
-3. **Uncertainty:** P10/P50/P90 outputs are ordered and their quantile loss
-   and empirical coverage are reported for evaluated targets and horizons.
-4. **Business linkage:** BOM cost changes are traceable to validated
-   materials, weights, units, and product configurations; margin impacts are
-   quantified only if the required commercial data and definitions are
-   provided.
-5. **ETO usability:** the analysis supports actionable, horizon-specific
-   offer discussions without representing forecasts as automatic pricing
-   decisions.
-6. **SF6-free strategy:** recommendations specify evidence-backed segments,
-   customer value, economic levers, and validation gaps for markets confirmed
-   to lack an applicable mandate.
-7. **Reproducibility:** a documented workflow reproduces the validated
-   forecast outputs and CSV from the available inputs.
+## Governance and validation
 
-The presentation says 3/6/9-month forecast accuracy and the quality of the
-non-regulated-market strategy matter equally. It does not define numerical
-accuracy, margin, adoption, or pass/fail thresholds. Stakeholders must agree
-those thresholds after the data, business baseline, and evaluation protocol
-are confirmed.
-
-## Client validation checklist
-
-- Confirm dataset delivery, provenance, license, schema, frequency, units,
-  and regional coverage.
-- Confirm forecast origin, target-month alignment, and expected CSV naming.
-- Confirm BOM weights, costing rules, product mappings, and current product
-  cost gap.
-- Confirm the current ETO quotation and pricing baseline and provide the
-  fields needed to calculate margin impact.
-- Agree primary and supporting metrics, aggregation weights, and
-  acceptance thresholds.
-- Confirm target markets, regulatory status, customer evidence, and
-  substantiation for TCO and lifecycle claims.
-- Confirm how recommendations will be reviewed and which decisions remain
-  with authorized commercial stakeholders.
+Confirm rights before using or redistributing external, licensed, internal BOM, benchmark, or supplier information. Keep confidential inputs out of public repositories, reports, and generated artifacts unless explicitly approved. Document authorized sources, versions, transformations, and AI-tool use for reproducibility. Schneider Electric must validate BOM authority, product mapping, forecast cutoff, commercial definitions, benchmark comparability, and market claims before recommendations become business policy.

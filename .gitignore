@@ -224,3 +224,7 @@ __marimo__/
 .venv/
 __pycache__/
 .pytest_cache/
+
+# Confidential Schneider Electric data
+data/
+Data/

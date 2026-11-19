@@ -7,7 +7,11 @@ authors = [
     { name = "Martin Lau", email = "martin.lau@hec.edu" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "numpy>=2.1",
+    "openpyxl>=3.1",
+    "pandas>=2.2",
+]
 
 [project.scripts]
 schneider-electric-forecasting = "schneider_electric_forecasting:main"
@@ -23,3 +27,6 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.17.5",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

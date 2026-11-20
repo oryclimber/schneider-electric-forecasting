@@ -22,7 +22,7 @@ class Severity(StrEnum):
 
 
 class AvailabilityMode(StrEnum):
-    """Availability evidence policy; lag-assumption mode is reserved, not implemented."""
+    """Availability evidence policy separating verified timestamps from explicit lag assumptions."""
 
     STRICT_POINT_IN_TIME = "strict_point_in_time"
     ASSUMPTION_BASED = "assumption_based"
@@ -81,6 +81,57 @@ class ValidationReport:
 
 class MissingAvailabilityError(ValueError):
     """Raised when point-in-time filtering lacks publication-time information."""
+
+
+def validate_observation_snapshot(observations, catalog):
+    """Combine structural, numeric, calendar and catalog checks without imputation."""
+    import numpy as np
+
+    report = validate_unique_key(observations, ("series_id", "month"))
+    report.extend(validate_series_consistency(observations, catalog))
+    report.extend(validate_monthly_calendar(observations, group_by="series_id"))
+    values = pd.to_numeric(observations["value"], errors="coerce")
+    invalid = values.notna() & (~np.isfinite(values) | (values <= 0))
+    malformed = observations["value"].notna() & values.isna()
+    if invalid.any() or malformed.any():
+        report.issues.append(
+            ValidationIssue(
+                Severity.ERROR,
+                "INVALID_VALUE",
+                f"{int((invalid | malformed).sum())} non-positive, nonfinite or malformed values.",
+            )
+        )
+    metadata = observations.merge(
+        catalog,
+        on="series_id",
+        suffixes=("_observation", "_catalog"),
+        how="left",
+        validate="many_to_one",
+    )
+    for metadata_field in ("unit", "currency", "provider_code", "region"):
+        left, right = f"{metadata_field}_observation", f"{metadata_field}_catalog"
+        if left in metadata and right in metadata:
+            mismatch = metadata[left].fillna("n/a").astype(str) != metadata[
+                right
+            ].fillna("n/a").astype(str)
+            if mismatch.any():
+                report.issues.append(
+                    ValidationIssue(
+                        Severity.ERROR,
+                        "METADATA_MISMATCH",
+                        f"{int(mismatch.sum())} observations disagree with catalog {metadata_field}.",
+                    )
+                )
+    dates = pd.to_datetime(observations.month, errors="coerce")
+    if dates.isna().any() or (dates.dt.day != 1).any():
+        report.issues.append(
+            ValidationIssue(
+                Severity.ERROR,
+                "INVALID_MONTH",
+                "Observation dates must be valid month starts.",
+            )
+        )
+    return report
 
 
 def validate_required_columns(

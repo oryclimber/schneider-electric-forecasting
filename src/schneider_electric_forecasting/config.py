@@ -19,13 +19,17 @@ DATA_DIR = (
 
 CANONICAL_DATASET_PATHS: Mapping[str, Path] = MappingProxyType(
     {
-        "rm_monthly_wide": DATA_DIR / "data" / "rm_prices_monthly_wide.csv",
-        "rm_monthly_long": DATA_DIR / "data" / "rm_prices_monthly_long.csv",
-        "rm_source_catalog": DATA_DIR / "data" / "source_catalog.csv",
-        "energy_monthly_wide": DATA_DIR / "data" / "energy_prices_monthly_wide.csv",
-        "energy_monthly_long": DATA_DIR / "data" / "energy_prices_monthly_long.csv",
-        "energy_source_catalog": DATA_DIR / "data" / "energy_source_catalog.csv",
-        "authoritative_bom": DATA_DIR / "RM_Prices_XHEC_Challenge.xlsx",
+        "rm_monthly_wide": DATA_DIR / "data" / "RM_Prices_XHEC_Challenge.xlsx",
+        "rm_monthly_long": DATA_DIR / "data" / "RM_Prices_XHEC_Challenge.xlsx",
+        "rm_source_catalog": DATA_DIR / "data" / "RM_Prices_XHEC_Challenge.xlsx",
+        "energy_monthly_wide": DATA_DIR / "data" / "Energy_Prices_XHEC_Challenge.xlsx",
+        "energy_monthly_long": DATA_DIR / "data" / "Energy_Prices_XHEC_Challenge.xlsx",
+        "energy_source_catalog": DATA_DIR
+        / "data"
+        / "Energy_Prices_XHEC_Challenge.xlsx",
+        "authoritative_bom": DATA_DIR / "RM_Prices_XHEC_Challenge_v1.xlsx",
+        "rm_price_workbook": DATA_DIR / "data" / "RM_Prices_XHEC_Challenge.xlsx",
+        "energy_workbook": DATA_DIR / "data" / "Energy_Prices_XHEC_Challenge.xlsx",
         "synthetic_rmu_benchmark": (
             DATA_DIR / "data" / "RMU_IQI_EU_Price_Benchmark_2017-2026_Synthetic.xlsx"
         ),
@@ -34,7 +38,10 @@ CANONICAL_DATASET_PATHS: Mapping[str, Path] = MappingProxyType(
 AUTHORITATIVE_BOM_PATH = CANONICAL_DATASET_PATHS["authoritative_bom"]
 
 FORECAST_ORIGIN = date(2026, 9, 1)
+FORECAST_DECISION_DATE = date(2026, 9, 30)
 FORECAST_HORIZONS = (3, 6, 9)
+# Retained energy snapshot uses this factor; its catalog rounds the inverse to 3.412.
+MWH_PER_MMBTU = 0.293071
 
 
 @dataclass(frozen=True)
@@ -68,7 +75,7 @@ class InformationAvailabilityRules:
     """Rules for selecting data available to a forecast at a decision cutoff.
 
     Naive timestamps are interpreted as UTC; timezone-aware timestamps are converted
-    to UTC. Estimated availability is reserved for a future, explicitly labeled mode.
+    to UTC. Estimated availability is implemented separately in availability.py and remains assumption-based.
     """
 
     observation_date_column: str = "month"

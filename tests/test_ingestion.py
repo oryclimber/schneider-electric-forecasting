@@ -62,6 +62,7 @@ def test_load_authoritative_bom_sheet(tmp_path: Path) -> None:
     path = tmp_path / "bom.xlsx"
     row = {column: None for column in config.BOM_REQUIRED_COLUMNS}
     row["product_ref"] = "synthetic-product"
+    row["plant_code"] = "synthetic-plant"
     pd.DataFrame([row]).to_excel(path, sheet_name="BOM_Materials", index=False)
 
     loaded = load_authoritative_bom(path)
@@ -129,6 +130,6 @@ def test_data_directory_can_be_overridden_by_environment(
         scoped.setenv("SCHNEIDER_DATA_DIR", str(override))
         reloaded_config = importlib.reload(config)
         assert reloaded_config.AUTHORITATIVE_BOM_PATH == (
-            override / "RM_Prices_XHEC_Challenge.xlsx"
+            override / "RM_Prices_XHEC_Challenge_v1.xlsx"
         )
     importlib.reload(config)

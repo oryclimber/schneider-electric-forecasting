@@ -228,3 +228,24 @@ __pycache__/
 # Confidential Schneider Electric data
 data/
 Data/
+
+# Local environments and generated research artifacts, even outside data/.
+.venv-*/
+mlruns/
+mlartifacts/
+mlflow_artifacts/
+mlflow.db*
+*_executed.ipynb
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.parquet
+*.feather
+*.npy
+*.npz
+*.joblib
+*.pkl
+*.pickle
+*.sqlite
+*.sqlite3

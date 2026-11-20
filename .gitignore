@@ -225,9 +225,9 @@ __marimo__/
 __pycache__/
 .pytest_cache/
 
-
 # Data files
 data/
+Data/
 *.csv
 *.zip
 repomix-output.md

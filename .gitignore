@@ -225,6 +225,13 @@ __marimo__/
 __pycache__/
 .pytest_cache/
 
-# Confidential Schneider Electric data
+# Data files
 data/
 Data/
+*.csv
+*.zip
+repomix-output.md
+
+# MACOS files
+.DS_Store/
+_MACOSX/

@@ -1,4 +1,17 @@
-# Issue #2 — Understanding Each Document
+# Data understanding and source precedence
+
+## Current architecture — November 2026 migration
+
+`data/RM_Prices_XHEC_Challenge_v1.xlsx` is authoritative wherever its contents overlap with prior sources. Actual inspection found one sheet, `BOM_Materials`, with 22 material rows and five summary rows. It contains no monthly prices, source catalog, currencies or publication timestamps. The loader separates summary metadata from material observations.
+
+The retained `data/data/RM_Prices_XHEC_Challenge.xlsx` supplies the price panels, FX, source catalog and dictionary; its embedded BOM is superseded. The independent energy workbook supplies energy and regional FX history. The prior standalone BOM and CSV exports are preserved locally in `data/.archive/before_v1/`; uncertain cloud exports are archived without permanent deletion. Supplementary market and supplier sources remain available for reconciliation and context.
+
+The generated current catalog, numerical quality findings, BOM differences, EDA comparisons and executed notebook are under ignored `data/eda_presentation/`. The inventory and sheet inspections are under ignored `data/audit/`. See [README](../README.md) for reproducible commands. September-origin selection uses the explicit September 30 decision cutoff and separately labeled lag assumptions; it does not establish verified historical availability.
+
+## Historical Issue #2 audit (superseded snapshot)
+
+The audit below is preserved as historical evidence. Its old paths, row counts, BOM precedence and missing-field findings describe the pre-v1 snapshot and must not override the current architecture above or the generated current catalog.
+
 
 This document contains a brief overview of the different documents in our given dataset.
 

@@ -228,6 +228,26 @@ __pycache__/
 # Data files
 data/
 Data/
+
+.venv-*/
+mlruns/
+mlartifacts/
+mlflow_artifacts/
+mlflow.db*
+*_executed.ipynb
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+*.parquet
+*.feather
+*.npy
+*.npz
+*.joblib
+*.pkl
+*.pickle
+*.sqlite
+*.sqlite3
 *.csv
 *.zip
 repomix-output.md

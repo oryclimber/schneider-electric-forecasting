@@ -225,11 +225,10 @@ __marimo__/
 __pycache__/
 .pytest_cache/
 
-# Confidential Schneider Electric data
+# Data files
 data/
 Data/
 
-# Local environments and generated research artifacts, even outside data/.
 .venv-*/
 mlruns/
 mlartifacts/
@@ -249,3 +248,10 @@ mlflow.db*
 *.pickle
 *.sqlite
 *.sqlite3
+*.csv
+*.zip
+repomix-output.md
+
+# MACOS files
+.DS_Store/
+_MACOSX/

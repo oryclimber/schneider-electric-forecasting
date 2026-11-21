@@ -13,61 +13,221 @@ The generated current catalog, numerical quality findings, BOM differences, EDA 
 The audit below is preserved as historical evidence. Its old paths, row counts, BOM precedence and missing-field findings describe the pre-v1 snapshot and must not override the current architecture above or the generated current catalog.
 
 
-## 1. Executive summary
+This document contains a brief overview of the different documents in our given dataset.
 
-The project supports raw-material and BOM cost forecasting for ETO pricing and gross-margin protection, while using market evidence to inform competitive pricing. The challenge forecast origin is **September 2026**. Required forecast targets are **December 2026 (3 months), March 2027 (6 months), and June 2027 (9 months)**.
+For unclear terms, see the [glossary](glossary.md).
 
-The local data directory is lowercase `data/` and is Git-ignored. The audit found monthly raw-material and energy panels, BOM versions, auxiliary commodity and market inputs, competitor benchmarks, and supplier financial reports. Core RM and energy panels are structured and monthly; the auxiliary workbooks are heterogeneous and need additional source, licensing, availability, and schema validation.
+## Tree summary of files
 
-By project decision, the standalone `data/RM_Prices_XHEC_Challenge.xlsx` is the authoritative source for **all BOM fields**. Its BOM differences with the nested workbook and CSV are resolved by precedence, but missing quantities/mappings, incomplete coverage, row-key ambiguity, and cost-weight limitations remain unresolved. Never fill authoritative blanks from secondary copies without explicit approval.
+```
+├── Data
+│   ├── data/                               Prioritize this for raw material price forecast
+│   │   ├── bom_materials.csv                   table giving each product's material family, mass (kg), mass share.
+│   │   ├── data_dictionary.csv                 field dictionary defining every column's type, unit, allowed values.
+│   │   ├── energy_prices_monthly_long.csv
+│   │   ├── energy_prices_monthly_wide.csv
+│   │   ├── Energy_Prices_XHEC_Challenge.xlsx
+│   │   ├── energy_source_catalog.csv           a list of different energy sources
+│   │   ├── README.md                           useful information on the data
+│   │   ├── rm_prices_monthly_long.csv
+│   │   ├── rm_prices_monthly_wide.csv
+│   │   ├── RM_Prices_XHEC_Challenge.xlsx
+│   │   └── source_catalog.csv
+│   ├── Supplier_balancesheet/
+│   │   ├── PitchBook_******.xlsx                              Information on Raw material suppliers, use for risk analysis
+│   ├── benchmark-modules-fonctionnels-[...].pdf
+│   ├── benchmark-modules-fonctionnels-[...].xlsx
+│   ├── Copia de Europe Steel INDEXES.xlsx
+│   ├── Epoxy for student.xlsx
+│   ├── LME_Copper_Aluminium_EU_Monthly_2016_2026.xlsx
+│   ├── RM_Prices_XHEC_Challenge.xlsx
+│   ├── RMU_IQI_EU_Price_Benchmark_2017-2026_Synthetic.xlsx
+│   └── X_HEC_2026_Pres.pdf
+```
 
-The readable nested RMU benchmark workbook is for competitive market context only: its model-labeled synthetic price bands are not confirmed actual transaction prices. The older protected OLE-format file at the root data path remains unchanged and was not opened by bypassing protection.
+**The difference between long & wide**: Contains the exact same data, but just arranged differently:
 
-This is descriptive data understanding and preliminary EDA, not formal model validation. No preprocessing pipeline, baseline forecast, rolling backtest, or model was implemented or trained. The October 2026 raw-material market report and all other post-origin observations are excluded from the official September-origin experiment.
+- Wide: Each series (different energy source or raw material) is a column. Each row is a given month.
 
-## 2. Dataset inventory
+```csv
+month,S01,S02,S06
+2016-11-01,5450.93,1737.11,1.0799
+2016-12-01,5660.35,1727.74,1.0543
+```
 
-The following inventory covers 31 files found under `data/`. Dimensions for workbooks refer to used worksheet ranges and can include titles, blank columns, merged headers, or formulas; they are not necessarily clean table sizes. Supplier financial report filenames and observations are omitted from this public document.
+- Long: Each row is an observation for an independent series. Different series jumbled up together in here.
 
-### Core RM, BOM, and documentation
+```csv
+month,series_id,value,unit,source
+2016-11-01,S01,5450.93,USD/t,IMF via FRED
+2016-11-01,S02,1737.11,USD/t,IMF via FRED
+2016-11-01,S06,1.0799,USD per EUR,ECB
+2016-12-01,S01,5660.35,USD/t,IMF via FRED
+```
 
-| Relative path | Format / size | Structure / coverage | Purpose and limits |
-|---|---|---|---|
-| `data/data/rm_prices_monthly_wide.csv` | CSV, 19,615 B | 120 × 26; monthly Nov 2016–Oct 2026. | Raw-material panel in wide form. Most price series end Sep 2026; FX continues to Oct. |
-| `data/data/rm_prices_monthly_long.csv` | CSV, 181,258 B | 1,548 × 10; 13 observed source IDs. | Tidy RM panel, one observed value per month/series. |
-| `data/data/source_catalog.csv` | CSV, 4,706 B | 23 × 13; one row per RM ID. | Series definition, geography, unit, source, access and proxy metadata. |
-| `data/data/bom_materials.csv` | CSV, 2,022 B | 17 × 10; material and summary rows. | Secondary BOM representation only; not authoritative for BOM fields. |
-| `data/data/data_dictionary.csv` | CSV, 2,821 B | 25 × 7. | Field descriptions and rules for the core challenge workbook. |
-| `data/data/README.md` | Markdown, 21,295 B | Source guide for core RM and energy data. | Coverage, definitions, licensing and refresh notes; scripts it references are not present in the local repository tree. |
-| `data/data/RM_Prices_XHEC_Challenge.xlsx` | XLSX, 118,628 B | README 21×1; BOM 18×10; source catalog 24×13; wide monthly 121×26; long monthly 1,549×10; dictionary 26×7. | Main RM panels and metadata. Its BOM sheet is lower-priority than the standalone workbook. |
-| `data/RM_Prices_XHEC_Challenge.xlsx` | XLSX, 11,617 B | BOM_Materials only, 18×10 including header. | Authoritative BOM source by project decision. |
-| `data/data.zip` | ZIP, 358,401 B | 11 core nested-data files. | Archive copies match the expanded core files byte-for-byte; not additional data. |
+## 1. Summary
 
-### Energy and auxiliary commodity inputs
+This data challenge concerns raw-material and Bill-Of-Materials (BOM) cost forecasting for Engineer-To-Order (ETO) pricing and gross-margin protection, while using market evidence to inform competitive pricing. In simple terms, we predict the a range of prices (10%, 50%, 90% percentiles) of raw materials.
 
-| Relative path | Format / size | Structure / coverage | Purpose and limits |
-|---|---|---|---|
-| `data/data/energy_prices_monthly_wide.csv` | CSV, 31,157 B | 120×31; monthly Nov 2016–Oct 2026. | Candidate regional/global exogenous variables, not BOM prices. |
-| `data/data/energy_prices_monthly_long.csv` | CSV, 404,184 B | 3,573×9; 30 IDs, with some series ending Sep or Jul 2026. | Tidy energy panel. |
-| `data/data/energy_source_catalog.csv` | CSV, 7,395 B | 30×13; one row per energy ID. | Source, coverage, region, unit, access and relevance metadata. |
-| `data/data/Energy_Prices_XHEC_Challenge.xlsx` | XLSX, 193,093 B | README 7×1; catalog 31×13; wide 121×31; long 3,574×9. | Workbook representation of the energy panel and catalog. |
-| `data/LME_Copper_Aluminium_EU_Monthly_2016_2026.xlsx` | XLSX, 59,273 B | Price Trends 11×8; Monthly Prices 136×16; Method & Sources 17×8; Jan 2016–Nov 2026. | Copper/aluminium cross-check or candidate input. Nov 2026 is provisional month-to-date; Oct/Nov are post-origin. |
-| `data/Epoxy for student.xlsx` | XLSX, 20,336 B | Feuil1 107×7; 106 nominally monthly rows Jan 2018–Oct 2026. | Resin/material cost-driver candidate; labels indicate EUR/tonne, but source and construction need validation. |
-| `data/Copia de Europe Steel INDEXES.xlsx` | XLSX, 932,708 B | 13 heterogeneous sheets, approximately 2–665×6–73; recognized dates span 1997–2029. | Potential steel-price inputs. Mixed frequencies, multi-row headers, possible vendor forecasts and restricted source content require review. |
+The challenge forecast origin is **September 2026**. Required forecast targets are **December 2026 (3 months), March 2027 (6 months), and June 2027 (9 months)**.
 
-### Competitive, market, and supplier-risk inputs
+See the below flowchart on how each piece of information would be used.
 
-| Relative path | Format / size | Structure / coverage | Purpose and limits |
-|---|---|---|---|
-| `data/data/RMU_IQI_EU_Price_Benchmark_2017-2026_Synthetic.xlsx` | XLSX, 54,611 B | ML_Trend 64×7 (header row 4, 60 records); Chart_Data 13×22; six brands, 2017–2026. | Newly accessible model-labeled synthetic benchmark; use for cautious competitive context only, not realized selling prices or RM targets. |
-| `data/RMU_IQI_EU_Price_Benchmark_2017-2026_Synthetic.xlsx` | OLE/Compound File, 90,112 B | Not readable by the available standard XLSX reader. | Older protected copy. Retain unchanged; do not bypass protections or treat it as the readable nested workbook. |
-| `data/benchmark-modules-fonctionnels-rm6-ne-iqi-3-fonctions-400a-appareillage-isolement-et-coupure-dans-le-gaz-sf6.xlsx` | XLSX, 65,718 B | Nine sheets: benchmark, six competitor/product BOMs, price sources and methodology; sheet sizes about 23–565×4–7. | Provisional RM6 competitor/teardown intelligence; not a clean time series, and some configurations are unpriced or inferred. |
-| `data/benchmark-modules-fonctionnels-rm6-ne-iqi-3-fonctions-400a-appareillage-isolement-et-coupure-dans-le-gaz-sf6.pdf` | PDF 1.3, 1,621,354 B | Page structure not inspected; no PDF metadata/reading utility was available. | Companion market reference; contents and permissions remain unverified. |
-| `data/Supplier_balancesheet/` | Nine XLSX reports; 39,240–88,256 B each. | Report-style sheets such as Overview, Income Statement, Balance Sheet, Cash Flow, Ratios, Deal Multiples, Disclaimer; layouts vary. | Potential supplier financial risk inputs only. Supplier names and financial observations are omitted; report periods, currencies, rights and BOM link are unverified. |
-| `data/Supplier_balancesheet.zip` | ZIP, 434,905 B | Nine supplier report workbooks. | Members are byte-identical to expanded copies; not additional data. |
-| `data/.DS_Store` | macOS metadata, 6,148 B | Finder metadata. | No analytical role. |
+```mermaid
+flowchart LR
+  subgraph SRC["1 · What we start with"]
+    RM["Raw material prices<br/>rm_prices_monthly_wide.csv<br/>source_catalog.csv"]
+    EN["Energy prices<br/>energy_prices_monthly_wide.csv<br/>energy_source_catalog.csv"]
+    AUX["Extra market data<br/>LME Cu/Al workbook<br/>Epoxy workbook<br/>Steel INDEXES workbook"]
+    BOM["Product recipe<br/>RM_Prices_XHEC_Challenge.xlsx<br/>BOM_Materials sheet"]
+  end
 
-The separate October 2026 raw-material market report is post-origin information. It must be treated only as retrospective market intelligence and must not inform the September-origin experiment, feature selection, tuning, or model selection.
+  subgraph MOD["2 · What we predict"]
+    F["Prices in 3, 6 and 9 months<br/>low, likely, high<br/>output: new forecast CSV"]
+  end
+
+  subgraph COST["3 · What it costs"]
+    IDX["Future material cost<br/>per product"]
+    MARG["Profit at risk<br/>if the price is fixed"]
+  end
+
+  subgraph BIZ["4 · What we do"]
+    QUOTE["How to price the offer<br/>validity and safety buffer"]
+    STRAT["How to sell AirSeT<br/>where SF6 is not banned"]
+  end
+
+  CTX["Competitor prices<br/>RMU synthetic workbook<br/>RM6 benchmark workbook + PDF"]
+  SUP["Supplier financial health<br/>Supplier_balancesheet folder<br/>9 PitchBook files"]
+
+  RM --> F
+  EN -->|"early signals"| F
+  AUX -.->|"check or add"| F
+  F -->|"cost per product"| IDX
+  BOM -->|"quantities"| IDX
+  IDX -->|"compare with fixed price"| MARG
+  MARG -->|"set price"| QUOTE
+  MARG -->|"build the case"| STRAT
+  CTX -.->|"market view"| STRAT
+  CTX -.->|"sanity check"| MARG
+  SUP -.->|"risk view"| STRAT
+```
+
+
+
+## 2. BOM composition
+
+The following chart covers the list of materials and how they influence the rest of the supply chain.
+
+```mermaid
+flowchart LR
+  subgraph PRICES["Price / index series"]
+    S01["S01 Copper USD/t"]
+    D01["D01 Copper EUR/t"]
+    S02["S02 Aluminium USD/t"]
+    D02["D02 Aluminium EUR/t"]
+    S03["S03 Nickel"]
+    S04["S04 Iron ore"]
+    S05["S05 Zinc"]
+    S09["S09 EU steel PPI"]
+    S10["S10 DE steel PPI"]
+    S11["S11 EU plastics PPI"]
+    S12["S12 US steel PPI"]
+    S13["S13 US plastics PPI"]
+    LFREE["L01–L08 licensed<br/>EMPTY — not available"]
+  end
+
+  subgraph MAT["BOM material families"]
+    CU["Copper"]
+    AL["Aluminium"]
+    SS["Stainless 304L"]
+    CS["Carbon steel"]
+    HDG["Galvanised steel"]
+    PL["PBT · PET · ETP"]
+    GAP["Other / To confirm<br/>not priceable"]
+  end
+
+  subgraph PROD["Products"]
+    RM6["RM6_NE_IQI_433520<br/>SFCME · France"]
+    AIR["RMAirSeT IIQ 24kV IEC<br/>Duna · Hungary"]
+  end
+
+  S01 --> CU
+  D01 --> CU
+  S02 --> AL
+  D02 --> AL
+  S03 -->|"cost driver"| SS
+  S09 -->|"EU proxy"| SS
+  S04 -->|"cost driver"| CS
+  S12 -->|"US proxy"| CS
+  S09 -->|"EU proxy"| CS
+  S05 -->|"coating driver"| HDG
+  S10 -->|"DE proxy"| HDG
+  S11 -->|"all polymers"| PL
+  S13 -->|"US proxy"| PL
+
+  LFREE -.->|"preferred but unavailable"| CU
+  LFREE -.->|"preferred but unavailable"| SS
+  LFREE -.->|"preferred but unavailable"| HDG
+  LFREE -.->|"preferred but unavailable"| PL
+
+  CU -->|"37.9 kg RM6"| RM6
+  SS -->|"58.6 kg RM6"| RM6
+  HDG -->|"14.4 kg RM6"| RM6
+  PL -->|"5.5 kg PET RM6"| RM6
+  AL -->|"4.5 kg RM6"| RM6
+  CS -->|"343.7 kg AirSeT"| AIR
+  SS -->|"75.3 kg AirSeT"| AIR
+  PL -->|"18.5 kg AirSeT"| AIR
+  AL -->|"4.9 kg AirSeT"| AIR
+  GAP -.->|"10.3 % AirSeT<br/>unlabelled RM6"| RM6
+  GAP -.->|"10.3 % AirSeT"| AIR
+```
+
+## 3. Energy as leading indicators
+
+```mermaid
+flowchart LR
+  BRENT["E01 Brent<br/>ED01 EUR/bbl"]
+  TTF["E05 TTF gas<br/>ED02 EUR/MWh"]
+  COAL["E08 Coal"]
+  POWER["E09–E11 Power<br/>DE · FR · HU"]
+  JP["E12 JEPX<br/>ED05 EUR/MWh"]
+
+  PLAS["S11 EU plastics PPI"]
+  ALU["S08 EU aluminium PPI"]
+  STEEL["S09 EU steel PPI"]
+  COST["Product material cost"]
+
+  BRENT -->|"1-month lead · r ≈ 0.61"| PLAS
+  TTF -->|"1-month lead · r ≈ 0.39"| ALU
+  TTF -->|"3-month change → 3-month change · r ≈ 0.38"| STEEL
+  COAL -->|"fuel cost"| ALU
+  COAL -->|"fuel cost"| STEEL
+  POWER -->|"smelting · refining · EAF"| ALU
+  POWER -->|"plant-country cost"| COST
+  JP -.->|"Asia comparison"| COST
+  PLAS --> COST
+  ALU --> COST
+  STEEL --> COST
+```
+
+
+## Remaining open questions
+
+1. What durable identifier should distinguish material rows from summary rows in each authoritative BOM configuration?
+2. Can Schneider Electric clarify the missing authoritative quantities, mass shares and regional price mappings without silently substituting secondary versions?
+3. Which materials, purchase basis, geography, currencies and approved baseline spend define the intended partial monetary BOM index?
+4. What is the exact September 2026 forecast cutoff, and can historical publication vintages/availability timestamps be supplied for each series?
+5. Which RM series and energy features are approved targets/features for each product and market? Are global commodity benchmarks suitable to local purchasing exposure?
+6. What source, synthetic-generation process, ML method and quantile interpretation apply to the RMU benchmark, and what uses are permitted?
+7. Which competitor configurations, markets, VAT basis, currency and commercial terms make price comparisons valid?
+8. What are the approved product mappings and distinctions among RM6/RM AirSeT and SM6/SM AirSeT?
+9. Which inflation series is approved, and should it be tested as deflation/reinflation, an exogenous feature, or both?
+10. What licenses, retention rules and publication restrictions apply to steel indices, supplier reports, competitor files and the October 2026 market report?
+### Reproducibility
+
+The audit used read-only CSV parsing, workbook sheet/header and formula/error inspection, keyed panel comparisons, archive-integrity/hash checks, monthly-calendar checks, and descriptive outlier/seasonality screens. No dependencies were installed; no source files were changed, no cleaned or merged dataset was written, no model was trained, and nothing was committed or pushed.
+
 
 ## 3. Dataset classification and business relevance
 
@@ -81,7 +241,51 @@ The separate October 2026 raw-material market report is post-origin information.
 | Supplier financial risk | Nine supplier workbooks and archive. | Separate controlled analysis; no confirmed join to BOM suppliers and not a monthly price-forecast target. |
 | Reference documentation | Core README, data dictionary, source catalogs, workbook README/method tabs. | Definitions and provenance; verify local availability and licensing. |
 
-## 4. Data dictionary and series definitions
+## 4. Core data file organization
+```mermaid
+flowchart TB
+  subgraph CORE["Core release · data/Data/data/"]
+    README["README.md<br/>definitions · caveats · licences"]
+    DICT["data_dictionary.csv<br/>field rules"]
+    RMCAT["source_catalog.csv<br/>23 series · codes · units"]
+    ENCAT["energy_source_catalog.csv<br/>30 series · coverage"]
+    RMWIDE["rm_prices_monthly_wide.csv<br/>120 × 26"]
+    RMLONG["rm_prices_monthly_long.csv<br/>1 548 × 10"]
+    ENWIDE["energy_prices_monthly_wide.csv<br/>120 × 31"]
+    ENLONG["energy_prices_monthly_long.csv<br/>3 573 × 9"]
+    RMXLSX["RM_Prices_XHEC_Challenge.xlsx<br/>6 sheets"]
+    ENXLSX["Energy_Prices_XHEC_Challenge.xlsx<br/>4 sheets"]
+    BOMSEC["bom_materials.csv<br/>secondary BOM"]
+  end
+
+  README -.->|"documents"| RMWIDE
+  README -.->|"documents"| ENWIDE
+  README -.->|"documents"| RMCAT
+  README -.->|"documents"| DICT
+  DICT -.->|"defines fields"| BOMSEC
+
+  RMCAT -->|"series_id"| RMLONG
+  RMCAT -->|"series_id"| RMWIDE
+  ENCAT -->|"series_id"| ENLONG
+  ENCAT -->|"series_id"| ENWIDE
+
+  RMLONG <-->|"same observations<br/>tidy ↔ wide"| RMWIDE
+  ENLONG <-->|"same observations<br/>tidy ↔ wide"| ENWIDE
+
+  RMWIDE -->|"exported to"| RMXLSX
+  ENWIDE -->|"exported to"| ENXLSX
+
+  DER["Derived series<br/>D01 = S01 / S06<br/>D02 = S02 / S06<br/>ED01–ED06"]
+  RMWIDE -->|"S01 · S02 · S06"| DER
+  ENWIDE -->|"E01 · E05–E07 · E12 · E20 · E21 · E23 · E24"| DER
+```
+
+**Reading it:** catalogs are the join dictionaries, wide/long are the same observations in
+two shapes (never double-count them), and `D*`/`ED*` are formulas over the `S*`/`E*`
+columns — dependent, not independent evidence.
+
+
+## Annex 2: Data dictionary and series definitions
 
 Field types are inferred from the files unless stated in the supplied dictionary. “Blank/not applicable” metadata is distinct from a missing observation. Catalog definitions below follow the actual local source catalogs; units, geography and access are series-specific.
 
@@ -167,163 +371,3 @@ Catalog access labels are not a substitute for checking redistribution terms. De
 | BOM `material_label_source`, `material_family` | Original material label and normalized category; text. | Preserve source label; harmonized family is a candidate mapping, not proof of purchasing equivalence. |
 | BOM `mass_kg`, `share_pct` | Quantity and mass share; numeric. | kg per product unit and fraction/percent per dictionary. `share_pct` is mass share, never cost weight. |
 | BOM `eu_series_ids`, `ww_series_ids` | Semicolon-separated candidate series mappings; text. | IDs resolve in RM catalog, but business validity remains unconfirmed. |
-
-## 5. Dataset relationships and join keys
-
-| Relationship | Status | Notes |
-|---|---|---|
-| RM long `(month, series_id)` → RM source catalog `series_id` | Verified structural relationship | RM catalog IDs are unique. The long data includes 13 observed IDs; the catalog also defines derived and licensed IDs. |
-| Energy long `(month, series_id)` → energy catalog `series_id` | Verified structural relationship | 30 observed IDs and 30 unique catalog IDs. |
-| Authoritative BOM `eu_series_ids` / `ww_series_ids` → RM catalog | IDs verified; semantic mapping proposed | 40 references across 22 distinct IDs resolve in the catalog. This does not validate material-price suitability. |
-| USD commodity price and FX → derived EUR commodity series | Documented formula relationship | `D01 = S01 / S06`; `D02 = S02 / S06`, where S06 is USD per EUR. Derived EUR prices are not independent observations. |
-| Energy source and derived energy series | Documented formula relationship | ED01–ED06 depend on listed E series and, for currency conversion, FX. Do not treat parent and derived columns as independent evidence. |
-| RM/energy/auxiliary prices → month | Candidate temporal alignment | Monthly periods can align, but publication vintages, region, unit and currency must be validated before joining. |
-| RMU benchmark → BOM, product configuration or actual quote | Not established | No validated configuration, country, transaction, cost or realized-sales key. |
-| RM6 competitor benchmark → RMU benchmark / BOM | Not established | No validated configuration bridge. RM6/RM AirSeT and SM6/SM AirSeT are not assumed interchangeable. |
-| Supplier reports → BOM suppliers/materials | Not established | No validated supplier identifier or purchasing relationship. |
-
-Do not join datasets merely because both contain a date or similar material label. Preserve each source's native grain until keys and business semantics are confirmed.
-
-## 6. Data source hierarchy and version control
-
-### BOM precedence
-
-For **all BOM fields**, use this hierarchy:
-
-1. **Authoritative:** `data/RM_Prices_XHEC_Challenge.xlsx` → `BOM_Materials`.
-2. Lower-priority comparison only: `data/data/RM_Prices_XHEC_Challenge.xlsx` → `BOM_Materials`.
-3. Lower-priority comparison only: `data/data/bom_materials.csv`.
-
-The standalone workbook takes precedence for conflicting material labels, quantities, mass shares and material-series mappings. Do not replace a blank authoritative value from a secondary version without explicit justification and approval. This rule resolves which version to use; it does not resolve missing values, incompleteness, row keys or cost weights.
-
-### Other files
-
-- The nested RM workbook and core CSVs remain the sources for raw-material panels, catalogs and data dictionary; their BOM copies are not authoritative.
-- Use the newly accessible nested RMU benchmark workbook for cautious competitive analysis. Retain the old protected root copy unchanged; do not bypass file protections or treat it as the new version.
-- Archive files are byte-identical packaging duplicates of their expanded members; treat each observation only once.
-- Record file path, version/date, source, licensing status, retrieval time and approved transformations for every future analytical derivative. Do not modify the original inputs.
-
-### BOM discrepancies and applied resolution
-
-Audit compared material rows in workbook order within each of the two BOM-bearing configurations; no unique material-row identifier is documented, so this is a field-level discrepancy count, not a claim of semantic row matching. No raw BOM values are reproduced.
-
-| Affected scope | Lower-priority copies versus standalone source | Resolution | Potential costing impact |
-|---|---|---|---|
-| Configuration A, material rows | In both nested workbook and CSV: one material-label cell, five `share_pct` cells and five `mass_kg` cells differ. | Use standalone values. Do not reconcile or average versions. | Changes alter a mass-weighted proxy and possibly classification/quantity inputs; they do not establish monetary cost weights. |
-| Configuration B, material rows | In both nested workbook and CSV: one material-label cell, six `share_pct` cells and six `mass_kg` cells differ. | Use standalone values. Do not reconcile or average versions. | Same proxy and partial-cost sensitivity; no claim of total product COGS. |
-| Summary rows | In each lower-priority copy, one `product_ref` and three `mass_kg` cells differ. | Use standalone summary-row values; do not mix totals with material rows or use alternate totals to fill missing inputs. | Mistaking summaries for materials or double-counting them can distort aggregates. |
-
-No positional differences were observed for regional mapping fields, but three authoritative rows have missing mappings. The secondary files contain related gaps and cannot validate the correct material association.
-
-## 7. Data quality assessment
-
-- **Calendar completeness:** RM and energy wide panels each have 120 consecutive monthly rows. Individual series have end-of-series blanks; no interior calendar gaps were found in their observed long series.
-- **Missingness:** RM wide fields S01–S05 and S07–S13 have 119 observations each through Sep 2026; S06 has 120 through Oct. D01/D02 have 119 each. L01–L08 are empty. Energy series counts vary: nine extend to Oct 2026, 18 to Sep and three to Jul. Long tables contain only observed rows and have no null `value` fields.
-- **Duplicate keys:** No duplicate `(month, series_id)` keys were found in RM or energy long data. Wide panels have unique months. RMU `Brand+Year` is unique; its `ID` field repeats by brand and is not a primary key.
-- **Workbook/CSV consistency:** Keyed RM and energy long panels match their corresponding workbook panels. Wide RM CSV/workbook values have small representation/rounding differences. Do not treat duplicate layouts as additional observations.
-- **Archive duplicates:** Both ZIP files pass integrity checks. Core archive members and supplier report members match their expanded copies byte-for-byte.
-- **BOM conflicts:** Version conflicts are resolved by the source hierarchy in Section 6. Remaining authoritative-source gaps and lack of a stable row key remain open.
-- **Units and currencies:** RM data include USD/t, USD/dmt, USD per EUR, EUR/t and PPIs with different base years. Energy data mix commodity units, USD/EUR/JPY pricing, FX, indices, trade volumes and shares. Convert compatible direct prices before monetary aggregation. Never add PPI index points to currency prices.
-- **Irregular frequency:** Core RM/energy panels are monthly. Epoxy has continuous month coverage, but dates fall on different days of the month. Steel workbook sheets have mixed layouts/frequencies and cannot be treated as one monthly series without sheet-level validation.
-- **Potential outliers:** A descriptive 3×IQR screen on RM levels/monthly changes through Sep 2026 flagged a small number of observations (including iron-ore levels and selected commodity/PPI changes). These are review flags, not proven errors; nothing was removed or altered.
-- **Formula errors:** The steel mapping sheet contains two explicit `#N/A` cells. No explicit Excel error cells were found in other readable workbooks. Formula cells were not recalculated, so cached or formula-derived values are not independently validated.
-- **Benchmark limitations:** RMU series are labeled synthetic/model-generated, but source, generation method, ML process, quantile calibration and price meaning are unconfirmed. RM6 material is explicitly provisional/incomplete. Neither establishes realized transaction price.
-- **Inaccessible file:** The older root RMU OLE file is not readable using the available standard reader. No protection was bypassed; use only the readable nested workbook for the currently approved benchmark role.
-
-## 8. Preliminary EDA findings
-
-The descriptive screen uses core RM observations through September 2026 only. It does not assert that every September value was published by the challenge cutoff and is not a forecast or formal model evaluation.
-
-- Direct commodity price series show positive endpoint changes over the available history, with substantial differences in monthly volatility. Nickel and iron ore are among the more volatile direct series in the simple descriptive screen.
-- EUR-converted copper and aluminium co-move by construction with their USD commodity prices and FX.
-- PPI series trend over their history but measure index movement, not currency cost; their base years and geographies differ.
-- A simple month-of-year screen is inconclusive for stable, repeatable seasonality. Do not assume seasonal structure or seasonally adjust without later time-ordered validation.
-- The coarse outlier flags require source, revision and event review. They do not justify deletion, smoothing or winsorization.
-- Inflation adjustment is a candidate experiment, not an assumed improvement. Compare nominal forecasting, deflated/reinflated forecasts, and nominal forecasts with a suitable inflation feature where permitted and available at each origin.
-
-These observations support prioritizing validated series for further EDA; they do not demonstrate forecast accuracy, calibration, causal feature value or margin improvement.
-
-## 9. Forecasting target and feature candidates
-
-| Candidate | Proposed role | Readiness for monthly forecasting and September origin |
-|---|---|---|
-| S01/S02 direct copper/aluminium | Primary raw-material target candidates if consistent with BOM and business procurement basis. | 119 monthly observations through Sep 2026. Validate September release availability and whether global benchmarks represent local costs. |
-| D01/D02 EUR copper/aluminium | Alternative currency-specific targets for EU cost scenarios. | 119 months through Sep; derived from USD price and FX, not independent. Validate FX cutoff. |
-| S03–S05 nickel, iron ore, zinc | Material drivers; target status only if client confirms direct exposure. | 119 months each. Monthly history available, but material-to-cost relation is indirect and units differ. |
-| S06 FX | Currency conversion feature. | Sep observation present, Oct also present but post-origin. Confirm release vintage and exclude all post-cutoff data. |
-| S07–S13 PPI series | Index targets or material proxy features, depending on approved use. | 119 months each through Sep. Different bases and regions; forecast relative index movement, not a direct monetary price. |
-| L01–L08 licensed series | None until lawfully available. | Zero observations; not suitable for training or baseline evaluation. |
-| E01–E24 / ED01–ED06 | Exogenous energy, FX, index or trade candidates, not BOM cost targets. | 117–120 calendar observations by series. Select based on causal/business relevance, publication timing, license and region; derived features inherit parent availability. |
-| Auxiliary LME copper/aluminium | Cross-check or alternative target/input after source and unit reconciliation. | Monthly data through Sep are potentially relevant; Oct and provisional Nov are excluded at origin. Overlaps core prices. |
-| Epoxy | Resin-related feature or target if its meaning matches a BOM material. | Jan 2018–Sep 2026 is the eligible date window; exclude Oct, validate non-first-day dates, source and publication vintage. |
-| Steel indexes | Possible steel target/driver only after sheet-level identification. | Mixed history and future/vendor forecast dates through 2029. Confirm license, units, history-versus-forecast status, and as-of availability before use. |
-| RMU synthetic benchmark | Market reference only. | Annual model outputs, no actual quote/trade target; not a raw-material series. |
-| RM6 benchmark | Competitive intelligence only. | Incomplete, provisional and non-monthly; not a forecast target. |
-| Supplier financial reports | Supplier-risk analysis only. | Different reporting periods/grains; not monthly material-price targets or validated exogenous features. |
-
-Future baseline and rolling backtesting require approved targets, a point-in-time feature set, historical data availability, and enough rolling origins for each horizon. The business problem statement proposes LOCF, but this Issue #2 audit does not train or score it.
-
-## 10. BOM costing readiness
-
-The authoritative workbook contains material rows and summary rows, but material coverage, row identity and selected quantities/mappings are incomplete. Three authoritative rows have missing quantities, mass shares and regional series mappings; do not backfill them from secondary copies.
-
-**Preferred future method — partial monetary cost index.** For validated authoritative quantities and compatible direct unit prices, convert units/currencies and calculate included-material spend; normalize against an agreed base. Disclose included materials, omissions, currency, base, and configuration. This remains partial and is not total COGS.
-
-Direct commodity prices may be multiplied by compatible validated quantities. PPI proxies represent relative index movement; monetary estimation requires an approved baseline spend/anchor and applying relative movement, not treating index points as currency per tonne.
-
-**Fallback — mass-weighted proxy.** Where monetary costing is not feasible, combine normalized price relatives using validated material masses or mass shares, clearly label it a mass-weighted proxy, and report omitted materials. Mass shares are not cost weights and this proxy does not establish a product cost.
-
-## 11. Competitive benchmarking readiness
-
-The readable RMU benchmark contains 60 annual brand-level rows across six brands and labels its outputs P10/P50/P90 (ML) with EUR/ex-VAT notes. It is structurally complete for the six principal fields, but `ID` is repeated; use brand-year only as the observed unique combination. Six initial year-over-year fields are placeholders.
-
-The “synthetic” and “ML” labels do not establish how values were generated, what prices represent, how quantiles were calibrated, or whether the values correspond to comparable products or actual market transactions. No configuration, country, BOM cost, customer, transaction terms or realized quote identifier is available. Therefore:
-
-- Do not use the benchmark as a raw-material forecasting target, actual selling-price history, margin label or evidence of realized competitive outcomes.
-- Do not infer a SF6-free premium from the workbook’s chart-only marker fields.
-- Use it only as a clearly qualified scenario/reference input after Schneider Electric validates source, generation, product comparability, regional scope, currency, VAT and commercial conditions.
-- Keep the provisional RM6 benchmark separate. Do not assume RM6/RM AirSeT and SM6/SM AirSeT are interchangeable.
-
-## 12. Data leakage and publication-lag considerations
-
-The official origin is September 2026. Exclude October 2026 observations from all inputs, transformations, feature selection and model selection. The provisional November LME observation and any later market reports are also excluded. The October 2026 raw-material report is retrospective intelligence only.
-
-An observation labeled September is not necessarily information available at a September decision cutoff. The nested data README reports source publication lags and possible revisions; `retrieved_at` records download time, not publication time. Before forecasting or historical backtesting:
-
-1. Agree the exact September decision timestamp.
-2. Obtain publication dates, historical releases/vintages, revision policy and, where possible, `available_at` for each source.
-3. Construct every rolling-origin feature set using only values published by that fold’s cutoff.
-4. Exclude future-dated steel vendor forecasts unless the intended task explicitly uses forecast-vintage inputs available at the time.
-5. Keep post-origin market reports outside model training, validation, feature choice and model comparison.
-
-## 13. Confidentiality and licensing constraints
-
-The local `data/` directory is Git-ignored, but this is not permission to publish, redistribute or use its contents. This public-facing document reports schemas and aggregate QA only; it omits BOM quantities, proprietary competitor prices, supplier identities and financial figures.
-
-Before any modeling or publication, confirm rights and attribution for external sources, licensed L-series, MEPS/CRU/other steel indexes, competitor price references, supplier financial reports, and derived outputs. Keep restricted raw inputs and sensitive derivatives out of public repositories, logs, screenshots and artifacts. The standalone BOM is a client-authorized working source for this project; its contents remain confidential unless disclosure is explicitly approved. Do not bypass file protection.
-
-## 14. Remaining open questions
-
-1. What durable identifier should distinguish material rows from summary rows in each authoritative BOM configuration?
-2. Can Schneider Electric clarify the missing authoritative quantities, mass shares and regional price mappings without silently substituting secondary versions?
-3. Which materials, purchase basis, geography, currencies and approved baseline spend define the intended partial monetary BOM index?
-4. What is the exact September 2026 forecast cutoff, and can historical publication vintages/availability timestamps be supplied for each series?
-5. Which RM series and energy features are approved targets/features for each product and market? Are global commodity benchmarks suitable to local purchasing exposure?
-6. What source, synthetic-generation process, ML method and quantile interpretation apply to the RMU benchmark, and what uses are permitted?
-7. Which competitor configurations, markets, VAT basis, currency and commercial terms make price comparisons valid?
-8. What are the approved product mappings and distinctions among RM6/RM AirSeT and SM6/SM AirSeT?
-9. Which inflation series is approved, and should it be tested as deflation/reinflation, an exogenous feature, or both?
-10. What licenses, retention rules and publication restrictions apply to steel indices, supplier reports, competitor files and the October 2026 market report?
-
-## 15. Recommended next steps for preprocessing, EDA, and baseline forecasting
-
-1. Preserve original inputs and encode the BOM source hierarchy in future derived workflows: standalone workbook for all BOM fields; nested workbook/CSV for RM panel and metadata only.
-2. Resolve BOM missing fields, row identity, product/plant mapping, material coverage, and approved cost basis. Never fill authoritative blanks from secondary versions without approval.
-3. Establish an as-of data snapshot and publication-vintage ledger for the September 2026 cutoff; quarantine October/November observations, the October market report, and future-dated vendor forecasts from the official experiment.
-4. Confirm source licenses, regional relevance, units, currency conversions, index bases, and direct-price versus PPI treatment before constructing features or costs.
-5. Perform deeper series-level EDA on approved data: trends, returns, structural breaks, volatility, missingness, outlier review, and seasonality diagnostics. Keep descriptive findings separate from formal validation.
-6. Once targets and as-of inputs are approved, prepare LOCF baseline inputs and rolling-origin evaluation folds for December 2026, March 2027 and June 2027. Compare candidate methods later using point-accuracy and uncertainty-calibration metrics; this audit did not train or score models.
-
-### Reproducibility
-
-The audit used read-only CSV parsing, workbook sheet/header and formula/error inspection, keyed panel comparisons, archive-integrity/hash checks, monthly-calendar checks, and descriptive outlier/seasonality screens. No dependencies were installed; no source files were changed, no cleaned or merged dataset was written, no model was trained, and nothing was committed or pushed.

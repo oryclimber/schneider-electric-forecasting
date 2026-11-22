@@ -5,13 +5,13 @@ import pandas as pd
 import pytest
 from statsmodels.tsa.stattools import adfuller, pacf
 
-from schneider_electric_forecasting import ingestion
-from schneider_electric_forecasting.eda import (
+from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting._01_data import add_monthly_returns
+from schneider_electric_forecasting._02_validation import validate_observation_snapshot
+from schneider_electric_forecasting.eda._03_eda import (
     autocorrelation_diagnostics,
     stationarity_tests,
 )
-from schneider_electric_forecasting.transforms import add_monthly_returns
-from schneider_electric_forecasting.validation import validate_observation_snapshot
 
 
 def test_bom_summary_rows_are_preserved_separately(monkeypatch):

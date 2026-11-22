@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from schneider_electric_forecasting.advanced import (
+from schneider_electric_forecasting._04_features import decision_date
+from schneider_electric_forecasting.modeling._05_forecasting import (
     FEATURES,
     NestedForecaster,
     estimator,
@@ -13,7 +14,6 @@ from schneider_electric_forecasting.advanced import (
     original_units,
     target_values,
 )
-from schneider_electric_forecasting.features import decision_date
 
 
 @pytest.fixture

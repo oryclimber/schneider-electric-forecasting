@@ -6,7 +6,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from schneider_electric_forecasting import config, ingestion
+from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting import config
 
 
 def load_script(name):
@@ -29,7 +30,7 @@ def test_current_eda_report_does_not_require_private_archive(tmp_path, monkeypat
         "load_rm_monthly_wide",
         lambda: pd.DataFrame({"month": pd.to_datetime(["2020-01-01"])}),
     )
-    load_script("build_eda_report").main()
+    load_script("build_reports").build_eda_report()
     report = (tmp_path / "eda_presentation/migration_and_eda_report.md").read_text()
     assert "Historical comparison unavailable" in report
     assert "synthetic" in report
@@ -51,7 +52,7 @@ def test_notebook_runner_respects_configured_output_root(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(nbclient, "NotebookClient", LocalClient)
     (tmp_path / "phase3").mkdir()
-    load_script("execute_eda").main(phase3=True)
+    load_script("run_notebook").main(phase3=True)
     assert (
         tmp_path / "phase3/feature_engineering_baseline_forecasting_executed.ipynb"
     ).is_file()

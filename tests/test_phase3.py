@@ -4,20 +4,20 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from schneider_electric_forecasting.baselines import (
-    baseline_forecasts,
-    rolling_backtest,
+from schneider_electric_forecasting._02_validation import (
+    AvailabilityMode,
+    MissingAvailabilityError,
 )
-from schneider_electric_forecasting.features import (
+from schneider_electric_forecasting._04_features import (
     history_features,
     origin_features,
     snapshot,
     supervised_dataset,
     training_rows,
 )
-from schneider_electric_forecasting.validation import (
-    AvailabilityMode,
-    MissingAvailabilityError,
+from schneider_electric_forecasting.modeling._05_forecasting import (
+    baseline_forecasts,
+    rolling_backtest,
 )
 
 

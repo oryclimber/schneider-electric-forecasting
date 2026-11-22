@@ -7,14 +7,12 @@ from datetime import date
 import pandas as pd
 import pytest
 
-from schneider_electric_forecasting.availability import (
+from schneider_electric_forecasting._02_validation import (
     AvailabilityConfigurationError,
-    PublicationLagAssumption,
-    select_available_observations,
-)
-from schneider_electric_forecasting.validation import (
     AvailabilityMode,
     MissingAvailabilityError,
+    PublicationLagAssumption,
+    select_available_observations,
 )
 
 

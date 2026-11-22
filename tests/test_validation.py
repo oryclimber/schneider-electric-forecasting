@@ -7,7 +7,7 @@ from datetime import date
 import pandas as pd
 import pytest
 
-from schneider_electric_forecasting.validation import (
+from schneider_electric_forecasting._02_validation import (
     AvailabilityMode,
     AvailabilityStatus,
     InvalidAvailabilityError,

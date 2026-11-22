@@ -1,29 +1,36 @@
-"""Execute the separate LOCF-based probabilistic policy without changing Phase 4."""
+"""Run the separate LOCF-based probabilistic policy (Phase 5).
+
+Usage:
+    uv run --locked python scripts/run_phase5.py
+
+Requires the frozen Phase 4 artifacts and verifies their hashes before and after
+the run. Writes predictive distributions, calibration ledgers, policy scores,
+the final P10/P50/P90 table, 3,000 joint material/FX paths and reports to
+``data/phase5/``. Phase 4 model selection is not retrained or modified.
+"""
 
 import hashlib
 import json
-import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-
-from schneider_electric_forecasting import config, ingestion
-from schneider_electric_forecasting.features import (
+from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting import config
+from schneider_electric_forecasting._02_validation import validate_observation_snapshot
+from schneider_electric_forecasting._04_features import (
     PHASE3_LAGS,
     TARGETS,
     monthly_history,
     snapshot,
 )
-from schneider_electric_forecasting.probabilistic import (
+from schneider_electric_forecasting.modeling._06_uncertainty import (
     CORE_METHODS,
     METHODS,
     SEED,
     SIMULATIONS,
     arch_gates,
+    diagnostics,
     fit_garch,
     generator,
     joint_scenarios,
@@ -32,11 +39,17 @@ from schneider_electric_forecasting.probabilistic import (
     quantile_scores,
     residual_ledger,
 )
-from schneider_electric_forecasting.random_walk import diagnostics
-from schneider_electric_forecasting.validation import validate_observation_snapshot
 
 
 def file_hashes(directory):
+    """Hash every file below a directory for change detection.
+
+    Args:
+        directory: Directory to walk recursively.
+
+    Returns:
+        A mapping of relative path string to SHA-256 hex digest.
+    """
     return {
         str(path.relative_to(directory)): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted(directory.rglob("*"))
@@ -45,6 +58,15 @@ def file_hashes(directory):
 
 
 def evaluation_tables(predictions):
+    """Aggregate probabilistic scores by partition, series, horizon and method.
+
+    Args:
+        predictions: Long table of interval forecasts and realised values with
+            pinball, coverage, width and scaled scores already computed.
+
+    Returns:
+        One row per grouping cell with mean metrics and the number of windows.
+    """
     metrics = [
         "pinball_P10",
         "pinball_P50",
@@ -79,6 +101,22 @@ def evaluation_tables(predictions):
 
 
 def main():
+    """Run the Phase 5 probabilistic policy and joint scenarios.
+
+    Requires the frozen Phase 4 artifacts and verifies their hashes before and
+    after the run. Writes distributions, calibration ledgers, policy scores, the
+    final P10/P50/P90 table, 3,000 joint material/FX paths and reports under
+    ``data/phase5/``. It does not retrain or alter the Phase 4 point policy.
+
+    Returns:
+        A dict with the output path, scores, macro table, frozen choices, final
+        forecasts and random-walk diagnostics.
+
+    Raises:
+        FileNotFoundError: If the required Phase 4 evidence is missing.
+        ValueError: If Phase 4 artifacts change during the run or a material/
+            horizon cell has no selected method.
+    """
     out = config.DATA_DIR / "phase5"
     out.mkdir(parents=True, exist_ok=True)
     # Frozen Phase 4 ledger is hashed, never opened for updates or policy selection.
@@ -399,9 +437,9 @@ def main():
     )
     if file_hashes(config.DATA_DIR / "phase4") != phase4_before:
         raise ValueError("Frozen Phase 4 artifacts changed unexpectedly.")
-    from phase5_reporting import build_report
+    from build_reports import build_phase5_report
 
-    build_report(out)
+    build_phase5_report(out)
     print(f"Phase 5 complete: {out}", flush=True)
     return {
         "output": out,

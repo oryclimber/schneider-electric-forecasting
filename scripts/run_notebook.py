@@ -1,4 +1,16 @@
-"""Execute the source notebook with this interpreter; keep outputs local."""
+"""Execute a source notebook without committing its outputs.
+
+Usage:
+    uv run --locked python scripts/run_notebook.py            # Phase 2 EDA
+    uv run --locked python scripts/run_notebook.py --phase3   # Phase 3
+    uv run --locked python scripts/run_notebook.py --phase4   # Phase 4
+    uv run --locked python scripts/run_notebook.py --phase5   # Phase 5
+
+The notebook runs in an isolated Jupyter runtime whose kernel, cache and runtime
+directories are temporary. The executed copy, figures and tables are written
+under the configured private data root (``data/<phase>/``), never beside the
+tracked notebook. The source notebook itself is not modified.
+"""
 
 import argparse
 import json
@@ -9,8 +21,24 @@ from tempfile import TemporaryDirectory
 
 
 def main(phase3=False, phase4=False, phase5=False):
+    """Execute one source notebook in an isolated Jupyter runtime.
+
+    The notebook is read from ``notebooks/`` and executed with the current
+    interpreter. Outputs, executed copies and temporary Jupyter state are written
+    under the configured private data root, never beside the tracked source
+    notebook.
+
+    Args:
+        phase3: Execute the Phase 3 features/baselines notebook.
+        phase4: Execute the Phase 4 advanced-model notebook.
+        phase5: Execute the Phase 5 probabilistic notebook.
+        No flag executes the Phase 2 EDA notebook.
+
+    Raises:
+        ValueError: If more than one phase flag is supplied.
+        FileNotFoundError: If the requested notebook is missing.
+    """
     root = Path(__file__).resolve().parents[1]
-    sys.path.insert(0, str(root / "src"))
     from schneider_electric_forecasting.config import DATA_DIR
 
     name = (
@@ -59,6 +87,7 @@ def main(phase3=False, phase4=False, phase5=False):
             resources={"metadata": {"path": str(root)}},
         ).execute()
         destination = DATA_DIR / output_directory / f"{name}_executed.ipynb"
+        destination.parent.mkdir(parents=True, exist_ok=True)
         nbformat.write(notebook, destination)
         print(f"Executed all {len(notebook.cells)} cells: {destination}")
 

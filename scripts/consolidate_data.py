@@ -2,14 +2,31 @@
 
 import json
 import shutil
+import sys
+from pathlib import Path
 from zipfile import BadZipFile
 
 import pandas as pd
-from audit_data import data_root
-from audit_data import main as inventory
+
+# This manual utility is executed as a script, so its sibling audit helper is
+# not importable as an installed module. Keep the path adjustment local and
+# avoid importing through a package that does not exist.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from audit_data import data_root  # noqa: E402
+from audit_data import main as inventory  # noqa: E402
 
 
 def main():
+    """Compare readable workbooks and archive verified redundant sources.
+
+    This is a **manual, mutating maintenance utility**, not part of the normal
+    pipeline. It copies prior EDA output into ``.archive/before_v1`` and can move
+    or remove redundant exports. Run it only with explicit authorisation and a
+    backup; the release audit never invokes it.
+
+    Returns:
+        None. Writes audit JSON and consolidation decisions under the data root.
+    """
     inventory()
     root = data_root()
     audit = root / "audit"

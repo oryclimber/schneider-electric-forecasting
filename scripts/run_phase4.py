@@ -1,44 +1,59 @@
-"""Reproducible nested rolling experiment with local-only MLflow tracking."""
+"""Run the nested Phase 4 experiment with local-only MLflow tracking.
+
+Usage:
+    uv run --locked python scripts/run_phase4.py
+
+Reads the authorized workbooks, evaluates ARIMA, ETS, Ridge, Elastic Net,
+XGBoost and LightGBM under nested rolling validation, freezes the selected
+family before confirmation data, and writes predictions, scores, tuning audits,
+figures and a local MLflow SQLite store under ``data/phase4/``. No external
+tracking server is contacted.
+"""
 
 import hashlib
 import json
 import os
-import sys
-from pathlib import Path
 
 os.environ.setdefault("MLFLOW_ENABLE_ASYNC_LOGGING", "false")
 os.environ.setdefault("DO_NOT_TRACK", "true")
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 import mlflow
 import numpy as np
 import pandas as pd
 
-from schneider_electric_forecasting import config, ingestion
-from schneider_electric_forecasting.advanced import (
-    CANDIDATES,
-    FEATURES,
-    SEED,
-    SELECTION_FREEZE,
-    NestedForecaster,
-    estimator,
-    frozen_selection,
-)
-from schneider_electric_forecasting.baselines import (
-    baseline_forecasts,
-    score_predictions,
-)
-from schneider_electric_forecasting.features import (
+from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting import config
+from schneider_electric_forecasting._02_validation import validate_observation_snapshot
+from schneider_electric_forecasting._04_features import (
     PHASE3_LAGS,
     TARGETS,
     snapshot,
     supervised_dataset,
 )
-from schneider_electric_forecasting.validation import validate_observation_snapshot
+from schneider_electric_forecasting.modeling._05_forecasting import (
+    CANDIDATES,
+    FEATURES,
+    SEED,
+    SELECTION_FREEZE,
+    NestedForecaster,
+    baseline_forecasts,
+    estimator,
+    frozen_selection,
+    score_predictions,
+)
 
 
 def performance(predictions):
+    """Score predictions per partition and add LOCF-relative MAE gains.
+
+    Args:
+        predictions: Outer predictions with ``partition``, ``series_id``,
+            ``horizon``, ``model``, ``error`` and ``mase_scale``.
+
+    Returns:
+        One row per partition/series/horizon/model with the standard metrics and
+        ``MAE_improvement_pct`` relative to that cell's LOCF MAE.
+    """
     results = []
     for partition, sample in predictions.groupby("partition"):
         table = score_predictions(sample)
@@ -55,6 +70,17 @@ def performance(predictions):
 
 
 def main():
+    """Run the nested Phase 4 experiment and log it to local MLflow.
+
+    The experiment selects model families on 2021-2022 outer folds, freezes the
+    choice before 2024, then evaluates confirmation folds. Predictions, tuning
+    audits, scores, feature importances, final forecasts and the MLflow SQLite
+    store are written under ``data/phase4/``. Phase 3 artifacts are not modified.
+
+    Returns:
+        A dict with the output path, scores, aggregate table, frozen selection
+        and final forecasts.
+    """
     out = config.DATA_DIR / "phase4"
     out.mkdir(exist_ok=True, parents=True)
     observations = pd.concat(
@@ -375,9 +401,9 @@ def main():
         for path in out.glob("*.csv"):
             mlflow.log_artifact(str(path))
         (out / "mlflow_run_id.txt").write_text(run.info.run_id + "\n")
-    from phase4_reporting import build_report
+    from build_reports import build_phase4_report
 
-    build_report(out)
+    build_phase4_report(out)
     print(f"Phase 4 complete: {out}", flush=True)
     return {
         "output": out,

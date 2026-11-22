@@ -10,12 +10,26 @@ from zipfile import BadZipFile, ZipFile
 
 
 def data_root():
+    """Resolve the private data root from ``SCHNEIDER_DATA_DIR`` or ``data/``.
+
+    Returns:
+        An absolute Path. The script never writes outside this root.
+    """
     project = Path(__file__).resolve().parents[1]
     configured = Path(os.environ.get("SCHNEIDER_DATA_DIR", "data")).expanduser()
     return configured if configured.is_absolute() else project / configured
 
 
 def main():
+    """Inventory local inputs, write hashes and inspect workbook structure.
+
+    The audit is read-only: it records file size, SHA-256, sheet names and
+    unreadable/cloud-placeholder status under ``<data_root>/audit/``. Generated
+    phase directories are skipped so their outputs are not re-audited as sources.
+
+    Returns:
+        None. Writes ``inventory.json`` (and workbook details when applicable).
+    """
     root = data_root()
     destination = root / "audit"
     destination.mkdir(exist_ok=True)

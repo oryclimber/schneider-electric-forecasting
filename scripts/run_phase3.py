@@ -1,26 +1,46 @@
-"""Execute feature engineering, paired baselines and local Phase 3 deliverables."""
+"""Run the Phase 3 feature build and paired baseline experiment.
+
+Usage:
+    uv run --locked python scripts/run_phase3.py
+
+Reads the authorized RM and energy workbooks and writes features, rolling
+predictions, baseline scores, exclusions, final September forecasts, figures and
+a Markdown report to ``data/phase3/``. LOCF is the mandatory comparator; no
+advanced model is fitted and no model is selected from evaluation errors.
+"""
 
 import json
-import sys
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-from schneider_electric_forecasting import config, ingestion
-from schneider_electric_forecasting.baselines import final_forecasts, rolling_backtest
-from schneider_electric_forecasting.features import (
+from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting import config
+from schneider_electric_forecasting._02_validation import validate_observation_snapshot
+from schneider_electric_forecasting._04_features import (
     PHASE3_LAGS,
     TARGETS,
     supervised_dataset,
     training_rows,
 )
-from schneider_electric_forecasting.validation import validate_observation_snapshot
+from schneider_electric_forecasting.modeling._05_forecasting import (
+    final_forecasts,
+    rolling_backtest,
+)
 
 
 def main():
+    """Run the Phase 3 feature build and paired baseline evaluation.
+
+    Reads the authorized RM and energy workbooks, writes supervised features,
+    rolling predictions, scores, exclusions, final September forecasts, figures
+    and a Markdown report under ``data/phase3/``. No advanced model is trained
+    and no candidate is selected from test errors.
+
+    Returns:
+        A dict with the dataset, scores, forecasts and recommendations used by
+        the source notebook.
+    """
     out = config.DATA_DIR / "phase3"
     out.mkdir(parents=True, exist_ok=True)
     rm, energy = ingestion.load_rm_monthly_long(), ingestion.load_energy_monthly_long()

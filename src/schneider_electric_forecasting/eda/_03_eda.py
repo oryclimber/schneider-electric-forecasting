@@ -1,7 +1,20 @@
-"""Descriptive exploratory analysis for monthly economic series.
+"""Descriptive analysis, figures and the EDA report (stage 3).
 
-Correlations and statistical diagnostics in this module are descriptive; they do not
-establish causal relationships or constitute forecasting-model validation.
+The module provides reusable table builders (coverage, missingness, returns,
+volatility, rolling statistics, outliers, seasonality, stationarity, ACF/PACF,
+correlations) and plotting helpers. :func:`run_eda_report` wires them together
+for the configured workbooks and writes CSVs, JSON and nine figure pairs under
+``data/eda_presentation/``.
+
+Scope and interpretation
+------------------------
+- Everything here is **descriptive**. Correlations are associations, not causal
+  effects, and historical P10/P50/P90 ranges are not predictive intervals.
+- Full-sample tables and September-origin tables are exported separately. The
+  origin panel uses the conservative availability rules from stage 2.
+- Missing values are counted, never filled. Outliers are flagged, never removed.
+- Figures are written as 300-DPI PNG and SVG; source notebooks stay output-free
+  in Git and executed copies are written only under the ignored data root.
 """
 
 from __future__ import annotations
@@ -15,7 +28,7 @@ import pandas as pd
 from statsmodels.tools.sm_exceptions import InterpolationWarning
 from statsmodels.tsa.stattools import acf, adfuller, kpss, pacf
 
-from schneider_electric_forecasting.transforms import (
+from .._01_data import (
     TransformationError,
     add_monthly_returns,
     normalize_monthly_dates,
@@ -28,7 +41,20 @@ def summary_statistics(
     value_column: str,
     group_by: str | Iterable[str] = (),
 ) -> pd.DataFrame:
-    """Return descriptive statistics by series or other explicit groups."""
+    """Summarise a value column overall or by explicit groups.
+
+    Args:
+        data: Source table.
+        value_column: Numeric column to describe.
+        group_by: Optional grouping column(s), normally ``series_id``.
+
+    Returns:
+        Count, mean, standard deviation, median, min, max and skew, either as one
+        row or one row per group.
+
+    Raises:
+        ValueError: If a required column is missing.
+    """
     groups = _as_tuple(group_by)
     _require_columns(data, (value_column, *groups))
     values = data.loc[:, [*groups, value_column]].copy()
@@ -66,7 +92,22 @@ def historical_coverage(
     series_id_column: str = "series_id",
     value_column: str = "value",
 ) -> pd.DataFrame:
-    """Summarize monthly coverage, observed values, and internal calendar gaps."""
+    """Summarise each series' calendar coverage and internal gaps.
+
+    Args:
+        data: Long monthly observations.
+        date_column: Month column.
+        series_id_column: Series identifier.
+        value_column: Measurement column.
+
+    Returns:
+        One row per series with first/last month, calendar months, row count,
+        observed and missing counts, and the number of absent months strictly
+        inside the series' own window.
+
+    Raises:
+        TransformationError: If a series/month pair is duplicated.
+    """
     _require_columns(data, (date_column, series_id_column, value_column))
     monthly = normalize_monthly_dates(data, date_column=date_column)
     if monthly.duplicated([series_id_column, date_column]).any():
@@ -293,7 +334,27 @@ def stationarity_tests(
     group_by: str | Iterable[str] = (),
     minimum_observations: int = 24,
 ) -> pd.DataFrame:
-    """Run ADF and KPSS tests per group, reporting insufficient/constant samples."""
+    """Run ADF and KPSS per group and report why a test was skipped.
+
+    ADF's null is a unit root; KPSS's null is level stationarity. The two tests
+    are complementary, not confirmatory, and remain sensitive to structural
+    breaks. Results are descriptive.
+
+    Args:
+        data: Long or grouped table with a value column and optional month.
+        value_column: Series to test.
+        group_by: Column(s) identifying independent series.
+        minimum_observations: Minimum complete observations required.
+
+    Returns:
+        One row per group with ADF/KPSS statistics and p-values and a ``status``
+        of ``ok``, ``insufficient_observations``, ``constant_series`` or
+        ``missing_or_discontinuous_months``.
+
+    Raises:
+        ValueError: If ``minimum_observations`` is below 3 or a column is
+            missing.
+    """
     if minimum_observations < 3:
         raise ValueError("minimum_observations must be at least 3.")
     groups = _as_tuple(group_by)
@@ -479,10 +540,28 @@ def lagged_correlations(
     series_id_column: str = "series_id",
     lags: Iterable[int] = (0, 1, 2, 3, 6, 12),
 ) -> pd.DataFrame:
-    """Correlate target at month t with candidate explanatory values at t-lag.
+    """Correlate a target at month t with candidate drivers at t-lag.
 
-    A positive lag uses only earlier explanatory observations. Results are
-    descriptive associations and should not be interpreted as causal effects.
+    Only non-negative lags are allowed, so the explanatory value is always
+    observed at or before the target month. Results are descriptive associations
+    and cannot be read as causal effects or as evidence of forecast value.
+
+    Args:
+        data: Long monthly observations.
+        value_column: Column holding returns or levels to correlate.
+        target_series_id: Series whose value at t is the left-hand side.
+        explanatory_series_ids: Candidate driver series.
+        date_column: Month column.
+        series_id_column: Series identifier column.
+        lags: Non-negative month offsets to test.
+
+    Returns:
+        One row per target/driver/lag with paired observation count, Pearson
+        correlation and an explicit ``descriptive_association_not_causation``
+        marker.
+
+    Raises:
+        ValueError: If a negative lag or an unknown series ID is supplied.
     """
     requested_lags = tuple(lags)
     if any(lag < 0 for lag in requested_lags):
@@ -671,22 +750,43 @@ def _require_columns(data: pd.DataFrame, columns: Iterable[str]) -> None:
 
 
 def run_eda_report(output_directory=None):
-    """Rebuild local descriptive tables and figures from configured sources.
+    """Rebuild the complete local EDA report from the configured workbooks.
 
-    Full-sample results and estimated origin inputs are exported separately.
-    Historical horizon percentiles are descriptive, never predictive intervals.
+    Loads the RM and energy long panels, validates them, derives catalog
+    metadata and coverage, applies the September origin availability rules, then
+    writes descriptive tables and nine figure pairs.
+
+    Args:
+        output_directory: Destination directory. Defaults to
+            ``config.DATA_DIR / "eda_presentation"``. It is created if needed.
+
+    Returns:
+        A dict with ``tables`` (name to DataFrame), the enriched ``catalog``,
+        the authoritative ``bom`` and the ``output_directory`` path.
+
+    Side effects:
+        Writes ``quality_checks.json``, ``data_catalog.csv``,
+        ``canonical_bom.csv``, origin/availability tables, every analysis CSV
+        and figures ``01``-``09`` as 300-DPI PNG and SVG. No source workbook is
+        modified and no missing value is imputed.
+
+    Notes:
+        Full-sample and origin-only tables have separate names. Historical
+        horizon percentiles are descriptive and must not be presented as
+        predictive intervals.
     """
     from pathlib import Path
 
     import matplotlib.pyplot as plt
 
-    from schneider_electric_forecasting import config, ingestion
-    from schneider_electric_forecasting.availability import (
+    from .. import _01_data as ingestion
+    from .. import config
+    from .._02_validation import (
         DOCUMENTED_PUBLICATION_LAG_ASSUMPTIONS,
+        AvailabilityMode,
         select_available_observations,
         summarize_availability_cutoffs,
     )
-    from schneider_electric_forecasting.validation import AvailabilityMode
 
     out = Path(output_directory or config.DATA_DIR / "eda_presentation")
     out.mkdir(parents=True, exist_ok=True)
@@ -698,7 +798,7 @@ def run_eda_report(output_directory=None):
     ]
     import json
 
-    from schneider_electric_forecasting.validation import validate_observation_snapshot
+    from .._02_validation import validate_observation_snapshot
 
     quality = {}
     for name, sample, metadata in zip(
@@ -765,7 +865,7 @@ def run_eda_report(output_directory=None):
     )
     catalog.to_csv(out / "data_catalog.csv", index=False)
     bom = ingestion.load_authoritative_bom()
-    from schneider_electric_forecasting.validation import validate_bom_material_mappings
+    from .._02_validation import validate_bom_material_mappings
 
     bom_report = validate_bom_material_mappings(bom, catalogs[0])
     quality["bom_mappings"] = {

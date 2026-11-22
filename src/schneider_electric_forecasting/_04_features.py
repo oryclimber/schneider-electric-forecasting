@@ -1,4 +1,24 @@
-"""Origin-specific features; no fitted preprocessing and no implicit imputation."""
+"""Build origin-specific features and supervised labels.
+
+This is stage 4 of the pipeline. For every rolling origin it first cuts the
+observations at that origin's decision date, then computes features from the
+resulting snapshot only. Features include price/return lags, rolling level and
+volatility statistics, momentum, calendar terms, predeclared energy/FX drivers
+and economically defined cross-material return spreads.
+
+Two rules keep the table honest:
+
+- **Lags are relative to the last observable month**, not the decision month.
+  A series delayed by publication lag therefore carries an observation-age
+  field so the model can see how stale its input is.
+- **Labels are metadata, not features.** :func:`supervised_dataset` stores the
+  realised target in ``target_value`` and its estimated publication date in
+  ``target_available_at_estimated``. Call :func:`training_rows` before fitting
+  so no label is used before it would have been published.
+
+There is deliberately no imputation, scaling or feature selection here; those
+must be fitted inside each training fold by the modelling stage.
+"""
 
 from __future__ import annotations
 
@@ -7,12 +27,12 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from schneider_electric_forecasting.availability import (
+from ._02_validation import (
     DOCUMENTED_PUBLICATION_LAG_ASSUMPTIONS,
+    AvailabilityMode,
     PublicationLagAssumption,
     select_available_observations,
 )
-from schneider_electric_forecasting.validation import AvailabilityMode
 
 LAGS = (1, 2, 3, 6, 12)
 WINDOWS = (3, 6, 12)
@@ -54,7 +74,25 @@ def decision_date(origin):
 def snapshot(
     observations, catalog, origin, *, mode=AvailabilityMode.ASSUMPTION_BASED, rules=None
 ):
-    """Select each series before any rolling calculation or return transformation."""
+    """Cut every series to what was available at one rolling origin.
+
+    This is the only entry point feature code should use to obtain history: it
+    applies the publication-lag rules before any lag, return or rolling
+    calculation, so later steps cannot see future values.
+
+    Args:
+        observations: Long observation table.
+        catalog: Matching source catalog.
+        origin: Origin month (period-like). The decision date is that month's
+            end.
+        mode: Availability mode; the modelling pipeline uses the documented
+            assumption-based mode by default.
+        rules: Optional ``series_id -> PublicationLagAssumption`` mapping.
+            Defaults to :data:`PHASE3_LAGS`.
+
+    Returns:
+        Rows available at the origin, with availability metadata attached.
+    """
     rules = PHASE3_LAGS if rules is None else rules
     identifiers = set(rules)
     return select_available_observations(
@@ -68,7 +106,21 @@ def snapshot(
 
 
 def monthly_history(selected, series_id):
-    """Unique calendar series with explicit gaps, ending at last actual observation."""
+    """Return one series as a complete monthly index ending at its last value.
+
+    Args:
+        selected: Snapshot returned by :func:`snapshot`.
+        series_id: Series to extract.
+
+    Returns:
+        A month-start indexed Series. Interior calendar gaps remain as NaN;
+        trailing missing values after the last observation are dropped. An empty
+        Series is returned when the series has no eligible rows.
+
+    Raises:
+        ValueError: If dates are not unique month starts, values are non-finite,
+            or a non-positive price/index is present.
+    """
     data = selected.loc[selected.series_id == series_id, ["month", "value"]].copy()
     if data.empty:
         return pd.Series(dtype=float, index=pd.DatetimeIndex([], name="month"))
@@ -117,6 +169,28 @@ def history_features(values):
 
 
 def origin_features(selected, series_id, origin, horizon):
+    """Build one feature row for a series at a rolling origin.
+
+    The row contains the series' own history features, calendar terms, the
+    predeclared driver features and the three cross-material return spreads.
+    All inputs come from ``selected``, which must already be cut at the origin;
+    the function checks for future observations and raises if any remain.
+
+    Args:
+        selected: Snapshot returned by :func:`snapshot` for this origin.
+        series_id: Series to build the row for.
+        origin: Month-end decision origin (period-like).
+        horizon: One of 3, 6 or 9 months.
+
+    Returns:
+        A flat ``dict`` of feature name to value. The row also records
+        ``last_observed_month`` and ``observation_age_months`` so downstream
+        code can see how stale each input is.
+
+    Raises:
+        ValueError: If the horizon is unsupported or the snapshot contains
+            observations after the origin month.
+    """
     if horizon not in (3, 6, 9):
         raise ValueError("Forecast horizon must be 3, 6 or 9 months.")
     period = pd.Period(origin, freq="M")
@@ -175,7 +249,29 @@ def origin_features(selected, series_id, origin, horizon):
 
 
 def supervised_dataset(observations, catalog, origins, *, targets=TARGETS, rules=None):
-    """Future labels are isolated metadata; training_rows gates their availability."""
+    """Build the supervised origin × series × horizon table.
+
+    Each row contains features computed from that origin's snapshot plus the
+    realised target and its estimated availability date. The target columns are
+    metadata: they must never be passed to an estimator. Use
+    :func:`training_rows` to select only labels published before a training
+    cutoff.
+
+    Args:
+        observations: Long observation table.
+        catalog: Source catalog.
+        origins: Iterable of rolling origin months.
+        targets: Series to build rows for.
+        rules: Optional publication-lag assumptions.
+
+    Returns:
+        A DataFrame with one row per origin/series/horizon, including
+        ``target_value`` and ``target_available_at_estimated``.
+
+    Raises:
+        ValueError: If a target has no availability rule, labels are duplicated,
+            or a snapshot contains future observations.
+    """
     rules = PHASE3_LAGS if rules is None else rules
     labels = observations.set_index(["series_id", "month"]).value
     if labels.index.duplicated().any():
@@ -210,7 +306,23 @@ def supervised_dataset(observations, catalog, origins, *, targets=TARGETS, rules
 
 
 def training_rows(dataset, as_of: date):
-    """Remove labels unavailable at a training cutoff; labels never become features."""
+    """Return rows whose target label was published by a training cutoff.
+
+    A row is eligible only when its origin is not later than ``as_of``, its
+    target is non-null, and its estimated label-availability date is strictly
+    before the cutoff. This is the guard that prevents future labels from
+    entering a fit.
+
+    Args:
+        dataset: Output of :func:`supervised_dataset`.
+        as_of: Training decision date.
+
+    Returns:
+        A filtered copy. ``target_value`` and the availability metadata are
+        retained for scoring/auditing but must be excluded from estimator
+        feature inputs.
+    """
+    # The +1 day makes a date-only cutoff inclusive of that whole day.
     cutoff = pd.Timestamp(as_of) + pd.Timedelta(days=1)
     return dataset.loc[
         (dataset.target_available_at_estimated < cutoff)

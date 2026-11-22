@@ -45,17 +45,17 @@ Run from a full repository checkout after `uv sync --locked --dev`:
 | Purpose | Command | Generated output directory under the data root |
 |---|---|---|
 | Read-only source inventory | `uv run --locked python scripts/audit_data.py` | `audit/` |
-| Current EDA | `uv run --locked python scripts/execute_eda.py` | `eda_presentation/` |
-| Features and baselines | `uv run --locked python scripts/execute_eda.py --phase3` | `phase3/` |
-| Advanced model evaluation | `uv run --locked python scripts/execute_eda.py --phase4` | `phase4/` |
-| Probabilistic forecasting | `uv run --locked python scripts/execute_eda.py --phase5` | `phase5/` |
+| Current EDA | `uv run --locked python scripts/run_notebook.py` | `eda_presentation/` |
+| Features and baselines | `uv run --locked python scripts/run_notebook.py --phase3` | `phase3/` |
+| Advanced model evaluation | `uv run --locked python scripts/run_notebook.py --phase4` | `phase4/` |
+| Probabilistic forecasting | `uv run --locked python scripts/run_notebook.py --phase5` | `phase5/` |
 
 Equivalent non-notebook experiment entry points are `scripts/run_phase3.py`,
 `scripts/run_phase4.py` and `scripts/run_phase5.py`. Phase 5 requires the Phase 4
 configuration, frozen selection and final forecast artifacts, and verifies Phase
 4 file hashes without modifying them. All helper/reporting scripts are versioned
 source candidates in `scripts/`; none is imported from an ignored data directory.
-The package's console greeting is not the pipeline entry point.
+Run the scripts from the repository root; they are thin entry points over the installed package.
 
 Source notebooks in `notebooks/` contain no cached outputs. Their executed copies
 are written under the configured private output root. Running on a different
@@ -66,14 +66,13 @@ or virtual environment. Native tree packages need a compatible OpenMP runtime.
 
 | Module | Responsibilities |
 |---|---|
-| `config.py`, `ingestion.py` | Paths, schemas, canonical BOM separation and reproducible currency/unit-derived series |
-| `validation.py`, `availability.py` | Structural checks, strict publication evidence and explicitly estimated availability |
-| `transforms.py`, `eda.py` | Calendar alignment, non-imputed returns, summaries, statistical diagnostics and figures |
-| `features.py` | Publication-gated origin snapshots, lag/rolling/calendar/driver features and supervised-label gating |
-| `baselines.py` | Transparent point baselines, actual observation-to-target distances and paired metrics |
-| `advanced.py` | Training-only preprocessing, inner rolling tuning and frozen model selection |
-| `probabilistic.py` | Known-error ledgers, simulated distributions, conformal ranks, conditional-volatility gates and joint paths |
-| `random_walk.py` | Explicit test nulls, robust variance ratios, serial/ARCH/drift/break diagnostics and multiplicity control |
+| `config.py` | Paths, schemas, forecast origin/horizons and publication-lag notes |
+| `_01_data.py` | Read-only loaders, canonical BOM separation, calendar/unit/currency normalisation and reproducible derived series |
+| `_02_validation.py` | Structural checks, strict publication evidence, documented lag assumptions and point-in-time selection |
+| `eda/_03_eda.py` | Descriptive summaries, statistical diagnostics, figures and the EDA report |
+| `_04_features.py` | Publication-gated origin snapshots, lag/rolling/calendar/driver features and supervised-label gating |
+| `modeling/_05_forecasting.py` | Point baselines, ARIMA/ETS/ML families, nested tuning, paired metrics and frozen model selection |
+| `modeling/_06_uncertainty.py` | Known-error ledgers, predictive distributions, conformal ranks, GARCH gates, joint paths and random-walk diagnostics |
 
 ## Time and leakage contract
 

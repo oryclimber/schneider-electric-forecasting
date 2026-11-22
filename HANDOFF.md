@@ -67,12 +67,11 @@ or virtual environment. Native tree packages need a compatible OpenMP runtime.
 | Module | Responsibilities |
 |---|---|
 | `config.py` | Paths, schemas, forecast origin/horizons and publication-lag notes |
-| `_01_data.py` | Read-only loaders, canonical BOM separation, calendar/unit/currency normalisation and reproducible derived series |
-| `_02_validation.py` | Structural checks, strict publication evidence, documented lag assumptions and point-in-time selection |
-| `eda/_03_eda.py` | Descriptive summaries, statistical diagnostics, figures and the EDA report |
-| `_04_features.py` | Publication-gated origin snapshots, lag/rolling/calendar/driver features and supervised-label gating |
-| `modeling/_05_forecasting.py` | Point baselines, ARIMA/ETS/ML families, nested tuning, paired metrics and frozen model selection |
-| `modeling/_06_uncertainty.py` | Known-error ledgers, predictive distributions, conformal ranks, GARCH gates, joint paths and random-walk diagnostics |
+| `_01_ingestion/` | One loader per source (`rm_prices`, `energy_prices`, `bom`, `rmu_benchmark`) plus shared read/transform helpers in `utils.py` |
+| `_02_validation/` | `_01_checks.py` structural checks; `_02_availability.py` verified/assumed point-in-time selection |
+| `_03_eda/` | `_01_tables.py` descriptive diagnostics; `_02_plots.py` figures; `_03_report.py` orchestration |
+| `_04_features/` | Publication-gated origin snapshots, lag/rolling/calendar/driver features and supervised-label gating |
+| `_05_modeling/` | `_01_baselines.py` point baselines; `_02_advanced.py` ARIMA/ETS/ML and frozen selection; `_03_probabilistic.py` P10/P50/P90 and joint paths; `_04_random_walk.py` diagnostics |
 
 ## Time and leakage contract
 

@@ -14,7 +14,7 @@ import json
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting import _01_ingestion as ingestion
 from schneider_electric_forecasting import config
 from schneider_electric_forecasting._02_validation import validate_observation_snapshot
 from schneider_electric_forecasting._04_features import (
@@ -23,7 +23,7 @@ from schneider_electric_forecasting._04_features import (
     supervised_dataset,
     training_rows,
 )
-from schneider_electric_forecasting.modeling._05_forecasting import (
+from schneider_electric_forecasting._05_modeling._01_baselines import (
     final_forecasts,
     rolling_backtest,
 )

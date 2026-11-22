@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from schneider_electric_forecasting._04_features import decision_date
-from schneider_electric_forecasting.modeling._05_forecasting import (
+from schneider_electric_forecasting._05_modeling._02_advanced import (
     FEATURES,
     NestedForecaster,
     estimator,

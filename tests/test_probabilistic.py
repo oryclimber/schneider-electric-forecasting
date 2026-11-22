@@ -6,12 +6,11 @@ import pytest
 from arch.unitroot import VarianceRatio
 
 from schneider_electric_forecasting._04_features import TARGETS
-from schneider_electric_forecasting.modeling._06_uncertainty import (
+from schneider_electric_forecasting._05_modeling._03_probabilistic import (
     CORE_METHODS,
     arch_gates,
     block_draws,
     conformal_quantiles,
-    diagnostics,
     fit_garch,
     garch_draws,
     generator,
@@ -20,6 +19,7 @@ from schneider_electric_forecasting.modeling._06_uncertainty import (
     predictive_distribution,
     quantile_scores,
 )
+from schneider_electric_forecasting._05_modeling._04_random_walk import diagnostics
 
 
 @pytest.fixture

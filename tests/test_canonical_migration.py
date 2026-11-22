@@ -5,10 +5,13 @@ import pandas as pd
 import pytest
 from statsmodels.tsa.stattools import adfuller, pacf
 
-from schneider_electric_forecasting import _01_data as ingestion
-from schneider_electric_forecasting._01_data import add_monthly_returns
+from schneider_electric_forecasting import _01_ingestion as ingestion
+from schneider_electric_forecasting._01_ingestion import bom as bom_loader
+from schneider_electric_forecasting._01_ingestion import energy_prices as energy_loader
+from schneider_electric_forecasting._01_ingestion import rm_prices as rm_loader
+from schneider_electric_forecasting._01_ingestion.utils import add_monthly_returns
 from schneider_electric_forecasting._02_validation import validate_observation_snapshot
-from schneider_electric_forecasting.eda._03_eda import (
+from schneider_electric_forecasting._03_eda import (
     autocorrelation_diagnostics,
     stationarity_tests,
 )
@@ -22,7 +25,9 @@ def test_bom_summary_rows_are_preserved_separately(monkeypatch):
             "mass_kg": [3, 3],
         }
     )
-    monkeypatch.setattr(ingestion, "_read_excel", lambda *args, **kwargs: source.copy())
+    monkeypatch.setattr(
+        bom_loader, "_read_excel", lambda *args, **kwargs: source.copy()
+    )
     assert ingestion.load_authoritative_bom().product_ref.tolist() == ["product"]
     assert ingestion.load_bom_metadata().product_ref.tolist() == ["Total mass"]
 
@@ -38,7 +43,7 @@ def test_workbook_eur_prices_are_recomputed_not_cached(monkeypatch):
             "D02": [999, 999],
         }
     )
-    monkeypatch.setattr(ingestion, "_read_excel", lambda *args, **kwargs: source.copy())
+    monkeypatch.setattr(rm_loader, "_read_excel", lambda *args, **kwargs: source.copy())
     result = ingestion.load_rm_monthly_wide()
     assert result.loc[0, "D01"] == 50
     assert result.loc[0, "D02"] == 20
@@ -61,7 +66,9 @@ def test_energy_conversions_recompute_with_source_precision(monkeypatch):
     source = pd.DataFrame({f"E{number:02d}": [2.0] for number in range(1, 25)})
     source["month"] = pd.to_datetime(["2026-01-01"])
     source["ED02"] = 999.0
-    monkeypatch.setattr(ingestion, "_read_excel", lambda *args, **kwargs: source.copy())
+    monkeypatch.setattr(
+        energy_loader, "_read_excel", lambda *args, **kwargs: source.copy()
+    )
     result = ingestion.load_energy_monthly_wide()
     assert result.loc[0, "ED02"] == pytest.approx(1 / 0.293071)
     assert result.loc[0, "ED05"] == 1000

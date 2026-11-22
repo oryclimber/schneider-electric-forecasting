@@ -48,7 +48,7 @@ def build_eda_report():
     absent; it then records the unavailable comparison instead of
     failing or fabricating prior results.
     """
-    from schneider_electric_forecasting import _01_data as ingestion
+    from schneider_electric_forecasting import _01_ingestion as ingestion
     from schneider_electric_forecasting import config
 
     out = config.DATA_DIR / "eda_presentation"
@@ -819,7 +819,7 @@ def build_phase5_report(out):
     fig.colorbar(image, ax=axes[-1], shrink=0.6)
     save(fig, "09_joint_innovation_dependence")
     # Dependence-aware descriptive coverage intervals only when two temporal blocks fit.
-    from schneider_electric_forecasting.modeling._06_uncertainty import (
+    from schneider_electric_forecasting._05_modeling._03_probabilistic import (
         block_draws,
         generator,
     )

@@ -15,7 +15,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting import _01_ingestion as ingestion
 from schneider_electric_forecasting import config
 from schneider_electric_forecasting._02_validation import validate_observation_snapshot
 from schneider_electric_forecasting._04_features import (
@@ -24,13 +24,12 @@ from schneider_electric_forecasting._04_features import (
     monthly_history,
     snapshot,
 )
-from schneider_electric_forecasting.modeling._06_uncertainty import (
+from schneider_electric_forecasting._05_modeling._03_probabilistic import (
     CORE_METHODS,
     METHODS,
     SEED,
     SIMULATIONS,
     arch_gates,
-    diagnostics,
     fit_garch,
     generator,
     joint_scenarios,
@@ -39,6 +38,7 @@ from schneider_electric_forecasting.modeling._06_uncertainty import (
     quantile_scores,
     residual_ledger,
 )
+from schneider_electric_forecasting._05_modeling._04_random_walk import diagnostics
 
 
 def file_hashes(directory):

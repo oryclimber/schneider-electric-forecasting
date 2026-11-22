@@ -21,7 +21,7 @@ import mlflow
 import numpy as np
 import pandas as pd
 
-from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting import _01_ingestion as ingestion
 from schneider_electric_forecasting import config
 from schneider_electric_forecasting._02_validation import validate_observation_snapshot
 from schneider_electric_forecasting._04_features import (
@@ -30,16 +30,18 @@ from schneider_electric_forecasting._04_features import (
     snapshot,
     supervised_dataset,
 )
-from schneider_electric_forecasting.modeling._05_forecasting import (
+from schneider_electric_forecasting._05_modeling._01_baselines import (
+    baseline_forecasts,
+    score_predictions,
+)
+from schneider_electric_forecasting._05_modeling._02_advanced import (
     CANDIDATES,
     FEATURES,
     SEED,
     SELECTION_FREEZE,
     NestedForecaster,
-    baseline_forecasts,
     estimator,
     frozen_selection,
-    score_predictions,
 )
 
 

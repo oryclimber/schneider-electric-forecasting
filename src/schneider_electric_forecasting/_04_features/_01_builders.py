@@ -27,7 +27,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from ._02_validation import (
+from .._02_validation import (
     DOCUMENTED_PUBLICATION_LAG_ASSUMPTIONS,
     AvailabilityMode,
     PublicationLagAssumption,

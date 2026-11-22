@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from schneider_electric_forecasting import _01_data as ingestion
+from schneider_electric_forecasting import _01_ingestion as ingestion
 from schneider_electric_forecasting import config
 
 

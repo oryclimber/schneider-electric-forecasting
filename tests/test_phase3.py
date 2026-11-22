@@ -15,7 +15,7 @@ from schneider_electric_forecasting._04_features import (
     supervised_dataset,
     training_rows,
 )
-from schneider_electric_forecasting.modeling._05_forecasting import (
+from schneider_electric_forecasting._05_modeling._01_baselines import (
     baseline_forecasts,
     rolling_backtest,
 )

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from schneider_electric_forecasting.eda._03_eda import (
+from schneider_electric_forecasting._03_eda import (
     annualized_volatility,
     autocorrelation_diagnostics,
     correlation_matrix,

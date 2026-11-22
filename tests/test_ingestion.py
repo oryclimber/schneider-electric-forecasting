@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 from schneider_electric_forecasting import config
-from schneider_electric_forecasting._01_data import (
+from schneider_electric_forecasting._01_ingestion import (
     DatasetLoadError,
     load_authoritative_bom,
     load_energy_monthly_long,

@@ -75,7 +75,7 @@ class InformationAvailabilityRules:
     """Rules for selecting data available to a forecast at a decision cutoff.
 
     Naive timestamps are interpreted as UTC; timezone-aware timestamps are converted
-    to UTC. Estimated availability is implemented separately in availability.py and remains assumption-based.
+    to UTC. Estimated availability is implemented separately in _02_validation/_02_availability.py and remains assumption-based.
     """
 
     observation_date_column: str = "month"

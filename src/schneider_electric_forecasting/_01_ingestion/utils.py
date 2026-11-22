@@ -1,23 +1,11 @@
-"""Load, schema-check and reshape the approved input workbooks.
+"""Shared read helpers and non-destructive monthly transformations.
 
-This is stage 1 of the pipeline and the only place that opens client source
-files. Every loader is read-only and fails closed on a missing file, a missing
-required column or a malformed month. Returned dates are month-start
-timestamps.
+This module owns the mechanics that every source loader needs: path resolution,
+file/schema checks, month parsing, Excel/CSV reading and appending derived
+observations to long tables. It also contains the calendar, currency and unit
+transformations used by later stages, which never impute or fill gaps.
 
-Values that are recomputed instead of trusted
----------------------------------------------
-- ``D01``/``D02``: copper/aluminium converted from USD to EUR with the ECB
-  USD-per-EUR rate.
-- ``ED01``-``ED06``: energy conversions with explicit unit factors (for example
-  MMBtu to MWh).
-- Derived observations are appended to the long tables using the same metadata
-  schema as source observations.
-
-The BOM loader returns material rows only; workbook summary/footer rows are
-available separately through :func:`load_bom_metadata`, so a total can never be
-mistaken for a material. Nothing here imputes, filters by forecast origin or
-writes back to a source workbook; those jobs belong to ``_02_validation``.
+Nothing here writes to a source workbook or performs modelling.
 """
 
 from __future__ import annotations
@@ -32,7 +20,7 @@ import numpy as np
 import pandas as pd
 from openpyxl.utils.exceptions import InvalidFileException
 
-from . import config
+from .. import config
 
 
 class DatasetLoadError(ValueError):
@@ -135,67 +123,6 @@ def _read_excel(
     return _parse_month(data, resolved_path, dataset_name)
 
 
-def load_rm_monthly_wide(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the monthly raw-material panel and recompute EUR prices.
-
-    Args:
-        path: Optional CSV or XLSX path. A CSV path is read directly; otherwise
-            the configured ``Monthly_Wide`` sheet is used. The source file is
-            never written.
-
-    Returns:
-        One row per month with ``month``, ``year``, ``month_num``, ``S01``-
-        ``S13``, ``D01``/``D02`` and the licensed ``L01``-``L08`` columns.
-        ``D01`` and ``D02`` are overwritten with ``S01 / S06`` and
-        ``S02 / S06`` so a stale cached Excel formula cannot leak into analysis.
-
-    Raises:
-        DatasetLoadError: If the file is missing, a required column is absent, a
-            numeric column contains non-numeric text, or FX is non-positive.
-    """
-    if path is not None and Path(path).suffix == ".csv":
-        return _read_csv("rm_monthly_wide", path, config.RM_WIDE_REQUIRED_COLUMNS)
-    data = _read_excel(
-        "rm_price_workbook", path, "Monthly_Wide", config.RM_WIDE_REQUIRED_COLUMNS
-    )
-    for column in data.columns.difference(["month"]):
-        data[column] = pd.to_numeric(data[column], errors="raise")
-    data["year"] = data["month"].dt.year
-    data["month_num"] = data["month"].dt.month
-    for target, source in (("D01", "S01"), ("D02", "S02")):
-        if (data["S06"].dropna() <= 0).any():
-            raise DatasetLoadError("FX conversion requires positive USD-per-EUR rates.")
-        data[target] = data[source] / data["S06"]
-    return data
-
-
-def load_rm_monthly_long(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the tidy raw-material panel, including derived EUR observations.
-
-    Args:
-        path: Optional CSV or XLSX path. A CSV path is read directly; otherwise
-            the configured ``Monthly_Long`` sheet is used.
-
-    Returns:
-        One row per observed ``(month, series_id)`` with unit, currency, region,
-        material, source and provider code. ``D01``/``D02`` rows are appended
-        here even though they are absent from the source sheet, so downstream
-        code sees the same derived prices as the wide panel.
-
-    Raises:
-        DatasetLoadError: If the workbook, sheet, required columns or source
-            catalog cannot be read.
-    """
-    if path is not None and Path(path).suffix == ".csv":
-        return _read_csv("rm_monthly_long", path, config.RM_LONG_REQUIRED_COLUMNS)
-    data = _read_excel(
-        "rm_price_workbook", path, "Monthly_Long", config.RM_LONG_REQUIRED_COLUMNS
-    )
-    catalog = load_rm_source_catalog(path)
-    wide = load_rm_monthly_wide(path)
-    return _with_derived_observations(data, wide, catalog, ("D01", "D02"))
-
-
 def _with_derived_observations(data, wide, catalog, derived_ids):
     """Attach calculated observations with the original source metadata schema."""
     derived = wide.melt(
@@ -215,147 +142,6 @@ def _with_derived_observations(data, wide, catalog, derived_ids):
         [data.loc[~data.series_id.isin(derived_ids)], derived[data.columns]],
         ignore_index=True,
     )
-
-
-def load_rm_source_catalog(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the raw-material series catalog."""
-    if path is not None and Path(path).suffix == ".csv":
-        return _read_csv("rm_source_catalog", path, config.RM_CATALOG_REQUIRED_COLUMNS)
-    return _read_excel(
-        "rm_price_workbook", path, "Source_Catalog", config.RM_CATALOG_REQUIRED_COLUMNS
-    )
-
-
-def load_energy_monthly_wide(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the monthly energy panel and recompute all derived series.
-
-    Args:
-        path: Optional CSV or XLSX path. A CSV path is read directly; otherwise
-            the configured ``Monthly_Wide`` sheet is used.
-
-    Returns:
-        One row per month with ``E01``-``E24`` plus ``ED01``-``ED06``. Derived
-        columns are recalculated from their inputs, including currency
-        conversion and the MMBtu-to-MWh factor, rather than trusting cached
-        Excel values.
-
-    Raises:
-        DatasetLoadError: If the workbook is unreadable, a required column is
-            missing, or a denominator (``E21``, ``E23``, ``E24``) is
-            non-positive.
-    """
-    if path is not None and Path(path).suffix == ".csv":
-        return _read_csv(
-            "energy_monthly_wide", path, config.ENERGY_WIDE_REQUIRED_COLUMNS
-        )
-    data = _read_excel(
-        "energy_workbook", path, "Monthly_Wide", config.ENERGY_WIDE_REQUIRED_COLUMNS
-    )
-    for column in data.columns.difference(["month"]):
-        data[column] = pd.to_numeric(data[column], errors="raise")
-    for denominator in ("E23", "E24", "E21"):
-        if (data[denominator].dropna() <= 0).any():
-            raise DatasetLoadError(
-                f"Energy derivation requires positive {denominator}."
-            )
-    data["ED01"] = data["E01"] / data["E23"]
-    for target, source in (("ED02", "E05"), ("ED03", "E07"), ("ED04", "E06")):
-        data[target] = data[source] / config.MWH_PER_MMBTU / data["E23"]
-    data["ED05"] = data["E12"] * 1000 / data["E24"]
-    data["ED06"] = data["E20"] / data["E21"]
-    return data
-
-
-def load_energy_monthly_long(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the retained monthly energy workbook."""
-    if path is not None and Path(path).suffix == ".csv":
-        return _read_csv(
-            "energy_monthly_long", path, config.ENERGY_LONG_REQUIRED_COLUMNS
-        )
-    data = _read_excel(
-        "energy_workbook", path, "Monthly_Long", config.ENERGY_LONG_REQUIRED_COLUMNS
-    )
-    return _with_derived_observations(
-        data,
-        load_energy_monthly_wide(path),
-        load_energy_source_catalog(path),
-        tuple(f"ED{number:02d}" for number in range(1, 7)),
-    )
-
-
-def load_energy_source_catalog(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the energy series catalog."""
-    if path is not None and Path(path).suffix == ".csv":
-        return _read_csv(
-            "energy_source_catalog", path, config.ENERGY_CATALOG_REQUIRED_COLUMNS
-        )
-    return _read_excel(
-        "energy_workbook",
-        path,
-        "Source_Catalog",
-        config.ENERGY_CATALOG_REQUIRED_COLUMNS,
-    )
-
-
-def load_authoritative_bom(path: str | Path | None = None) -> pd.DataFrame:
-    """Load only the material rows of the canonical BOM workbook.
-
-    Args:
-        path: Optional workbook path; defaults to the configured authoritative
-            ``_v1`` workbook.
-
-    Returns:
-        One row per material with product, plant, source label, harmonised
-        family, mass/share and EU/world series mappings. Summary and footer rows
-        are excluded by requiring a non-null ``plant_code``.
-
-    Raises:
-        DatasetLoadError: If the workbook or sheet is unreadable or a required
-            column is missing.
-    """
-    data = _read_excel(
-        "authoritative_bom",
-        path,
-        "BOM_Materials",
-        config.BOM_REQUIRED_COLUMNS,
-    )
-
-    return data.loc[data["plant_code"].notna()].reset_index(drop=True)
-
-
-def load_bom_metadata(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the BOM workbook's summary/footer rows as a separate table.
-
-    These rows contain totals such as labelled mass and implied product mass.
-    They are not material observations and must never be summed with material
-    rows.
-
-    Args:
-        path: Optional workbook path; defaults to the authoritative ``_v1`` file.
-
-    Returns:
-        Rows with a null ``plant_code``, preserving their original columns.
-    """
-    data = _read_excel(
-        "authoritative_bom", path, "BOM_Materials", config.BOM_REQUIRED_COLUMNS
-    )
-    return data.loc[data["plant_code"].isna()].reset_index(drop=True)
-
-
-def load_synthetic_rmu_benchmark(path: str | Path | None = None) -> pd.DataFrame:
-    """Load the accessible synthetic RMU benchmark's ML_Trend table."""
-    return _read_excel(
-        "synthetic_rmu_benchmark",
-        path,
-        "ML_Trend",
-        config.RMU_BENCHMARK_REQUIRED_COLUMNS,
-        skiprows=3,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Normalisation, conversion and calendar helpers (formerly transforms.py)
-# ---------------------------------------------------------------------------
 
 
 class TransformationError(ValueError):

@@ -1,6 +1,8 @@
 """Clean-checkout reporting and configured notebook-output regression checks."""
 
 import importlib.util
+import json
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -56,6 +58,50 @@ def test_notebook_runner_respects_configured_output_root(tmp_path, monkeypatch):
     assert (
         tmp_path / "phase3/feature_engineering_baseline_forecasting_executed.ipynb"
     ).is_file()
+
+
+def test_notebook_script_imports_resolve_to_scripts_directory():
+    root = Path(__file__).resolve().parents[1]
+    pattern = re.compile(
+        r"^from\s+(run_\w+|build_\w+|audit_data|consolidate_data)\s+import",
+        flags=re.MULTILINE,
+    )
+    problems = []
+    for notebook in sorted((root / "notebooks").glob("*.ipynb")):
+        cells = json.loads(notebook.read_text())["cells"]
+        path_ready = False
+        for cell in cells:
+            if cell["cell_type"] != "code":
+                continue
+            source = "".join(cell["source"])
+            setup_at = source.find("sys.path.insert")
+            if setup_at != -1:
+                path_ready = True
+            if re.search(r"^from\s+\.", source, flags=re.MULTILINE):
+                problems.append(f"{notebook.name}: relative import is invalid")
+            for match in pattern.finditer(source):
+                if not path_ready or (setup_at != -1 and match.start() < setup_at):
+                    problems.append(
+                        f"{notebook.name}: local import before sys.path setup: "
+                        f"{match.group(0)}"
+                    )
+                if not (root / "scripts" / f"{match.group(1)}.py").is_file():
+                    problems.append(
+                        f"{notebook.name}: missing scripts/{match.group(1)}.py"
+                    )
+    assert not problems, problems
+
+
+def test_source_notebooks_have_no_cached_outputs():
+    root = Path(__file__).resolve().parents[1]
+    offenders = []
+    for notebook in sorted((root / "notebooks").glob("*.ipynb")):
+        for index, cell in enumerate(json.loads(notebook.read_text())["cells"]):
+            if cell["cell_type"] != "code":
+                continue
+            if cell.get("outputs") or cell.get("execution_count") is not None:
+                offenders.append(f"{notebook.name} cell {index}")
+    assert not offenders, f"Cached notebook outputs must stay untracked: {offenders}"
 
 
 def test_phase5_fails_closed_without_frozen_phase4_evidence(tmp_path, monkeypatch):

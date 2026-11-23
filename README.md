@@ -60,7 +60,7 @@ Install and run:
 ```bash
 uv sync --locked --dev
 uv run --locked python scripts/audit_data.py
-uv run --locked python scripts/execute_eda.py
+uv run --locked python scripts/run_notebook.py
 uv run --locked pytest -q
 uv run --locked ruff check .
 uv run --locked ruff format --check .
@@ -101,7 +101,7 @@ last observable month to the actual target, rather than assuming current prices
 are already available.
 
 ```bash
-uv run --locked python scripts/execute_eda.py --phase3
+uv run --locked python scripts/run_notebook.py --phase3
 # Alternatively execute the pipeline without notebook display:
 uv run --locked python scripts/run_phase3.py
 ```
@@ -137,7 +137,7 @@ Each training fold excludes labels not yet published under the availability rule
 
 ```bash
 uv sync --locked --dev
-uv run --locked python scripts/execute_eda.py --phase4
+uv run --locked python scripts/run_notebook.py --phase4
 # Or run the experiment and reporting without notebook display:
 uv run --locked python scripts/run_phase4.py
 # Optional local experiment UI:
@@ -175,7 +175,7 @@ or probabilistic forecasts are implemented in this phase.
 
 ```bash
 uv sync --locked --dev
-uv run --locked python scripts/execute_eda.py --phase5
+uv run --locked python scripts/run_notebook.py --phase5
 # Alternatively run the same calculations without notebook display:
 uv run --locked python scripts/run_phase5.py
 ```
@@ -217,12 +217,18 @@ must be reviewed before considering fixed-price-offer or cost decisions.
 
 ## Reproducibility, findings and Phase 6 handoff
 
-Run the four notebooks in order: EDA, --phase3, --phase4, --phase5. Phase 5 now fails
+Run the four notebooks in order with `scripts/run_notebook.py`: EDA, `--phase3`,
+`--phase4`, `--phase5`. Phase 5 now fails
 closed if the Phase 4 experiment configuration, frozen selection and final point
 forecasts are missing; restoring approved local artifacts is an alternative to
 rerunning Phase 4. Executed notebooks are written to SCHNEIDER_DATA_DIR, while
 source notebooks remain free of outputs. Do not run the migration/consolidation
 utility merely to reproduce forecasts.
+
+Generated reports and figures can be re-rendered without rerunning models with
+`uv run --locked python scripts/build_reports.py --report all` (or `eda`,
+`phase4`, `phase5`); the command fails when the corresponding generated CSVs are
+absent. Phase 3's report is written by `run_phase3.py` itself.
 
 The test suite uses synthetic fixtures and needs no confidential workbook. CI runs
 tests, lint and formatting; it does not possess the private inputs or run the full

@@ -60,7 +60,7 @@ Install and run:
 ```bash
 uv sync --locked --dev
 uv run --locked python scripts/audit_data.py
-uv run --locked python scripts/execute_eda.py
+uv run --locked python scripts/run_notebook.py
 uv run --locked pytest -q
 uv run --locked ruff check .
 uv run --locked ruff format --check .
@@ -101,7 +101,7 @@ last observable month to the actual target, rather than assuming current prices
 are already available.
 
 ```bash
-uv run --locked python scripts/execute_eda.py --phase3
+uv run --locked python scripts/run_notebook.py --phase3
 # Alternatively execute the pipeline without notebook display:
 uv run --locked python scripts/run_phase3.py
 ```
@@ -137,7 +137,7 @@ Each training fold excludes labels not yet published under the availability rule
 
 ```bash
 uv sync --locked --dev
-uv run --locked python scripts/execute_eda.py --phase4
+uv run --locked python scripts/run_notebook.py --phase4
 # Or run the experiment and reporting without notebook display:
 uv run --locked python scripts/run_phase4.py
 # Optional local experiment UI:
@@ -175,7 +175,7 @@ or probabilistic forecasts are implemented in this phase.
 
 ```bash
 uv sync --locked --dev
-uv run --locked python scripts/execute_eda.py --phase5
+uv run --locked python scripts/run_notebook.py --phase5
 # Alternatively run the same calculations without notebook display:
 uv run --locked python scripts/run_phase5.py
 ```
@@ -215,14 +215,52 @@ monetary weights are generated. Summing marginal P90 forecasts does not produce
 the P90 of total exposure. Coverage, tail calibration and unresolved BOM inputs
 must be reviewed before considering fixed-price-offer or cost decisions.
 
+## Challenge pack (September 2026)
+
+The standalone challenge pack builds the September-origin submission without
+rerunning the research phases:
+
+```bash
+uv run --locked python scripts/build_challenge_pack.py
+```
+
+It writes a 42-row challenge-format CSV, a partial monetary BOM cost index, BOM
+coverage, offer-rule scenarios, figures, an Excel workbook and a self-contained
+HTML deck under `data/submission/`. The deck is rebuilt with
+`uv run --locked python scripts/build_strategy_deck.py`. The five locked decisions are in
+`documentation/decisions.md`; the commercial rule and strategy are in
+`documentation/offer_rule.md` and `documentation/strategy_pack.md`.
+
+An interactive decision tool is also available:
+
+```bash
+uv sync --group app
+uv run --group app streamlit run streamlit_app.py
+```
+
+The app lets a non-coder change the margin, material-share and risk-buffer
+assumptions and see the quote impact immediately. It reads the generated pack
+from `data/submission/`; run the pack builder first.
+
+The point forecast is LOCF and the P10/P90 intervals are empirical, not
+calibrated guarantees. The BOM index covers 92.7% of RM6 mass and 85.9% of
+RM AirSeT mass; plastics, brass and unidentified rows are excluded and
+disclosed. Steel-index use still requires licence confirmation.
+
 ## Reproducibility, findings and Phase 6 handoff
 
-Run the four notebooks in order: EDA, --phase3, --phase4, --phase5. Phase 5 now fails
+Run the four notebooks in order with `scripts/run_notebook.py`: EDA, `--phase3`,
+`--phase4`, `--phase5`. Phase 5 now fails
 closed if the Phase 4 experiment configuration, frozen selection and final point
 forecasts are missing; restoring approved local artifacts is an alternative to
 rerunning Phase 4. Executed notebooks are written to SCHNEIDER_DATA_DIR, while
 source notebooks remain free of outputs. Do not run the migration/consolidation
 utility merely to reproduce forecasts.
+
+Generated reports and figures can be re-rendered without rerunning models with
+`uv run --locked python scripts/build_reports.py --report all` (or `eda`,
+`phase4`, `phase5`); the command fails when the corresponding generated CSVs are
+absent. Phase 3's report is written by `run_phase3.py` itself.
 
 The test suite uses synthetic fixtures and needs no confidential workbook. CI runs
 tests, lint and formatting; it does not possess the private inputs or run the full

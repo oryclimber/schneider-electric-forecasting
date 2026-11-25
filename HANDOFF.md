@@ -49,11 +49,14 @@ Run from a full repository checkout after `uv sync --locked --dev`:
 | Features and baselines | `uv run --locked python scripts/run_notebook.py --phase3` | `phase3/` |
 | Advanced model evaluation | `uv run --locked python scripts/run_notebook.py --phase4` | `phase4/` |
 | Probabilistic forecasting | `uv run --locked python scripts/run_notebook.py --phase5` | `phase5/` |
+| Re-render generated reports | `uv run --locked python scripts/build_reports.py --report all` | `eda_presentation/`, `phase4/`, `phase5/` |
 
 Equivalent non-notebook experiment entry points are `scripts/run_phase3.py`,
 `scripts/run_phase4.py` and `scripts/run_phase5.py`. Phase 5 requires the Phase 4
 configuration, frozen selection and final forecast artifacts, and verifies Phase
-4 file hashes without modifying them. All helper/reporting scripts are versioned
+4 file hashes without modifying them. `scripts/build_reports.py` only re-renders
+existing generated CSVs and fails when they are absent; Phase 3's report is
+written by `run_phase3.py`. All helper/reporting scripts are versioned
 source candidates in `scripts/`; none is imported from an ignored data directory.
 Run the scripts from the repository root; they are thin entry points over the installed package.
 

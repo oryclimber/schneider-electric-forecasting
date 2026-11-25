@@ -6,6 +6,20 @@ approved staging these exact 41 paths and creating one local commit with the
 message specified below. Publishing, merging, rewriting history, deleting files
 and changing branches remain unapproved. See the refreshed preparation review.
 
+## Post-merge script naming note
+
+The subsequent PR #7 refactor consolidated the execution and reporting scripts.
+The historical staging list and command block below intentionally preserve the
+names that were current at audit time; they are not runnable on the merged
+`main`. Current equivalents are:
+
+| Audit-time name | Current name |
+|---|---|
+| `scripts/execute_eda.py` | `scripts/run_notebook.py` (add `--phase3`, `--phase4` or `--phase5`) |
+| `scripts/build_eda_report.py` | `scripts/build_reports.py` (default `--report eda`) |
+| `scripts/phase4_reporting.py` | `scripts/build_reports.py --report phase4` |
+| `scripts/phase5_reporting.py` | `scripts/build_reports.py --report phase5` |
+
 ## Git and remote snapshot
 
 - Current branch: `feat/data-engineering` at `d6f7a88f7a5203dc4ee4a709a6db82c342ba9470`.

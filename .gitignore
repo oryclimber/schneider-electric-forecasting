@@ -219,6 +219,11 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# Local tool caches and temporary directories
+.uv-cache/
+.mplconfig/
+pytest-of-*/
+
 # Streamlit
 .streamlit/secrets.toml
 .venv/

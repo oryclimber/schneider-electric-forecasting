@@ -215,6 +215,38 @@ monetary weights are generated. Summing marginal P90 forecasts does not produce
 the P90 of total exposure. Coverage, tail calibration and unresolved BOM inputs
 must be reviewed before considering fixed-price-offer or cost decisions.
 
+## Challenge pack (September 2026)
+
+The standalone challenge pack builds the September-origin submission without
+rerunning the research phases:
+
+```bash
+uv run --locked python scripts/build_challenge_pack.py
+```
+
+It writes a 42-row challenge-format CSV, a partial monetary BOM cost index, BOM
+coverage, offer-rule scenarios, figures, an Excel workbook and a self-contained
+HTML deck under `data/submission/`. The deck is rebuilt with
+`uv run --locked python scripts/build_strategy_deck.py`. The five locked decisions are in
+`documentation/decisions.md`; the commercial rule and strategy are in
+`documentation/offer_rule.md` and `documentation/strategy_pack.md`.
+
+An interactive decision tool is also available:
+
+```bash
+uv sync --group app
+uv run --group app streamlit run streamlit_app.py
+```
+
+The app lets a non-coder change the margin, material-share and risk-buffer
+assumptions and see the quote impact immediately. It reads the generated pack
+from `data/submission/`; run the pack builder first.
+
+The point forecast is LOCF and the P10/P90 intervals are empirical, not
+calibrated guarantees. The BOM index covers 92.7% of RM6 mass and 85.9% of
+RM AirSeT mass; plastics, brass and unidentified rows are excluded and
+disclosed. Steel-index use still requires licence confirmation.
+
 ## Reproducibility, findings and Phase 6 handoff
 
 Run the four notebooks in order with `scripts/run_notebook.py`: EDA, `--phase3`,

@@ -133,8 +133,14 @@ def build() -> pd.DataFrame:
             row[col] = _bom_text(bom, product, mats) if mats else ""
         rows.append(row)
     cols = [
-        "supplier", "what_it_does_per_public_sources", "mapped_material", "in_rm6_bom",
-        "in_airset_bom", "confidence", "status", "evidence",
+        "supplier",
+        "what_it_does_per_public_sources",
+        "mapped_material",
+        "in_rm6_bom",
+        "in_airset_bom",
+        "confidence",
+        "status",
+        "evidence",
     ]
     return pd.DataFrame(rows)[cols]
 
@@ -145,7 +151,11 @@ def main() -> None:
     table = build()
     table.to_csv(out / "supplier_material_map.csv", index=False)
     with pd.option_context("display.width", 250, "display.max_colwidth", 60):
-        print(table.drop(columns=["what_it_does_per_public_sources", "evidence"]).to_string(index=False))
+        print(
+            table.drop(
+                columns=["what_it_does_per_public_sources", "evidence"]
+            ).to_string(index=False)
+        )
     bom = _bom_quantities()
     in_bom = {k for p in PRODUCTS for k in bom[p]["quantities"]}
     missing = [m for m in MATERIAL_SUPPLIERS if m not in in_bom]

@@ -125,17 +125,31 @@ def build() -> pd.DataFrame:
                 }
             )
             for case in ("supplier_raises_price", "supplier_fails"):
-                hit = stress[(stress["product"] == k[0]) & (stress.offer_horizon_m == k[1])
-                             & (stress.case == case)].iloc[0].supplier_cost_hit_pct_of_price / 100
-                row[f"gm_at_competitor_{case}_pct"] = 100 * (p_ref - cogs_d - hit) / p_ref
+                hit = (
+                    stress[
+                        (stress["product"] == k[0])
+                        & (stress.offer_horizon_m == k[1])
+                        & (stress.case == case)
+                    ]
+                    .iloc[0]
+                    .supplier_cost_hit_pct_of_price
+                    / 100
+                )
+                row[f"gm_at_competitor_{case}_pct"] = (
+                    100 * (p_ref - cogs_d - hit) / p_ref
+                )
             row["status"] = _status(gap, gap_nb)
             row["suggested_lever"] = _lever(
-                row["status"], bool(t.add_supplier_clause),
-                row["gm_at_competitor_downside_pct"], tm,
+                row["status"],
+                bool(t.add_supplier_clause),
+                row["gm_at_competitor_downside_pct"],
+                tm,
             )
         else:
             row["status"] = "no comparable competitor"
-            row["suggested_lever"] = "supplier terms only; add competitor mapping for AirSeT"
+            row["suggested_lever"] = (
+                "supplier terms only; add competitor mapping for AirSeT"
+            )
         rows.append(row)
     return pd.DataFrame(rows)
 
@@ -150,7 +164,9 @@ def sensitivity() -> pd.DataFrame:
     """
     import offer_matrix
 
-    terms = pd.read_csv(OUT / "supplier_offer_terms.csv").set_index(["product", "offer_horizon_m"])
+    terms = pd.read_csv(OUT / "supplier_offer_terms.csv").set_index(
+        ["product", "offer_horizon_m"]
+    )
     comp = pd.read_csv(OUT / "competitor_price_comparison.csv").set_index("brand")
     ours = float(comp.loc["Schneider", "synthetic_p50_2026"])
     ref = float(comp.loc[COMPARABLE, "synthetic_p50_2026"].median())
@@ -160,8 +176,12 @@ def sensitivity() -> pd.DataFrame:
         for frac in TOLERANCE_GRID:
             offer_matrix.TOLERANCE_MARGIN_FRACTION = frac
             rec, scen = offer_matrix.build()
-            down = scen[scen.scenario == "downside"].set_index(["product", "offer_horizon_m"])
-            for _, r in rec[rec["product"].str.startswith(COMPETITOR_PRODUCT)].iterrows():
+            down = scen[scen.scenario == "downside"].set_index(
+                ["product", "offer_horizon_m"]
+            )
+            for _, r in rec[
+                rec["product"].str.startswith(COMPETITOR_PRODUCT)
+            ].iterrows():
                 k = (r["product"], int(r.offer_horizon_m))
                 t, d = terms.loc[k], down.loc[k]
                 total_adj = r.quote_adj_pct + t.supplier_buffer_pct
@@ -174,10 +194,13 @@ def sensitivity() -> pd.DataFrame:
                         "tolerance_pp_of_price": r.target_margin_pct * frac,
                         "offer_horizon_m": k[1],
                         "price_validity_m": int(r.validity_m),
-                        "final_validity_m": min(int(r.validity_m), int(t.supplier_validity_cap_m)),
+                        "final_validity_m": min(
+                            int(r.validity_m), int(t.supplier_validity_cap_m)
+                        ),
                         "quote_adj_pct": r.quote_adj_pct,
                         "total_quote_adj_pct": total_adj,
-                        "gap_to_reference_pct": 100 * (ours * (1 + total_adj / 100) / ref - 1),
+                        "gap_to_reference_pct": 100
+                        * (ours * (1 + total_adj / 100) / ref - 1),
                         "gm_at_competitor_downside_pct": 100 * (p_ref - cogs) / p_ref,
                     }
                 )
@@ -192,17 +215,39 @@ def main() -> None:
     sens = sensitivity()
     sens.round(3).to_csv(OUT / "competitive_risk_sensitivity.csv", index=False)
     print("\nSensitivity to the loss tolerance (RM6; base case is 0.10):")
-    with pd.option_context("display.width", 300, "display.float_format", "{:.2f}".format):
+    with pd.option_context(
+        "display.width", 300, "display.float_format", "{:.2f}".format
+    ):
         print(sens.to_string(index=False))
     print()
-    print("LIMITATION: competitor prices are synthetic 2026 P50s held flat; RM6 only; "
-          "directional scenario analysis (see module docstring).")
-    cols = ["product", "offer_horizon_m", "total_quote_adj_pct", "supplier_buffer_pct",
-            "our_quote", "gap_to_reference_pct", "buffer_cost_in_gap_pp",
-            "gm_at_competitor_downside_pct", "gm_at_competitor_supplier_fails_pct",
-            "final_validity_m", "status", "suggested_lever"]
-    with pd.option_context("display.width", 300, "display.max_columns", 30,
-                           "display.max_colwidth", 60, "display.float_format", "{:.2f}".format):
+    print(
+        "LIMITATION: competitor prices are synthetic 2026 P50s held flat; RM6 only; "
+        "directional scenario analysis (see module docstring)."
+    )
+    cols = [
+        "product",
+        "offer_horizon_m",
+        "total_quote_adj_pct",
+        "supplier_buffer_pct",
+        "our_quote",
+        "gap_to_reference_pct",
+        "buffer_cost_in_gap_pp",
+        "gm_at_competitor_downside_pct",
+        "gm_at_competitor_supplier_fails_pct",
+        "final_validity_m",
+        "status",
+        "suggested_lever",
+    ]
+    with pd.option_context(
+        "display.width",
+        300,
+        "display.max_columns",
+        30,
+        "display.max_colwidth",
+        60,
+        "display.float_format",
+        "{:.2f}".format,
+    ):
         print(df.reindex(columns=cols).to_string(index=False))
 
 

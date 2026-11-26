@@ -99,10 +99,12 @@ def build():
             residual[breach, j] = base_cost[j]
             res_index = 100 * residual.sum(axis=1) / base_cost.sum()
 
-            p90, p10 = np.quantile(index, 0.90), np.quantile(index, 0.10)
+            p90 = np.quantile(index, 0.90)
             expected = s * (index.mean() / 100 - 1)
             gross_buffer = BUFFER_FRACTION * s * (p90 - 100) / 100
-            net_buffer = BUFFER_FRACTION * s * (np.quantile(res_index, 0.90) - 100) / 100
+            net_buffer = (
+                BUFFER_FRACTION * s * (np.quantile(res_index, 0.90) - 100) / 100
+            )
             validity = _validity(panel, keys, quantities, s, horizon, tolerance, rng)
             rec_rows.append(
                 {
@@ -127,7 +129,9 @@ def build():
             for scenario, q in SCENARIOS.items():
                 i = float(np.quantile(index, q)) if scenario != "baseline" else 100.0
                 cost_impact = s * (i / 100 - 1)
-                ref_move = float(np.quantile(move[:, j], q)) if scenario != "baseline" else 0.0
+                ref_move = (
+                    float(np.quantile(move[:, j], q)) if scenario != "baseline" else 0.0
+                )
                 clause_hit = abs(ref_move) > trigger
                 clause_adj = s * weights[j] * ref_move if clause_hit else 0.0
                 quote = expected + net_buffer
@@ -141,7 +145,7 @@ def build():
                         "cost_impact_pct": 100 * cost_impact,
                         "quote_adj_pct": 100 * quote,
                         "indexed_material": ref,
-                        f"ref_move_pct": 100 * ref_move,
+                        "ref_move_pct": 100 * ref_move,
                         "clause_triggered": clause_hit,
                         "clause_adj_pct": 100 * clause_adj,
                         "margin_after_pct": 100 * margin_after,
@@ -158,7 +162,9 @@ def main():
     rec, scen = build()
     rec.to_csv(out / "offer_matrix_recommendation.csv", index=False)
     scen.to_csv(out / "offer_matrix_scenarios.csv", index=False)
-    with pd.option_context("display.width", 250, "display.float_format", "{:.2f}".format):
+    with pd.option_context(
+        "display.width", 250, "display.float_format", "{:.2f}".format
+    ):
         print(rec.to_string(index=False))
         print()
         print(scen.to_string(index=False))

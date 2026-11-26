@@ -41,6 +41,7 @@ from schneider_electric_forecasting import config
 
 POINTS = {"low": 1, "medium": 2, "high": 3}  # ASSUMPTION: linear scoring of ratings
 
+
 def _fold(name: str) -> str:
     """Accent-stripped name, so 'Rötzer' matches however the file encodes it."""
     return unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
@@ -60,7 +61,9 @@ def material_risk(scorecard: pd.DataFrame) -> pd.DataFrame:
         rows.append(
             {
                 "material": material,
-                "suppliers": "; ".join(f"{s} ({scorecard.rating[s]})" for s in suppliers),
+                "suppliers": "; ".join(
+                    f"{s} ({scorecard.rating[s]})" for s in suppliers
+                ),
                 "n_suppliers": len(vals),
                 "base_risk": float(np.mean(list(vals.values()))),
                 "downside_risk": float(max(vals.values())),
@@ -121,8 +124,19 @@ def main():
     mat.to_csv(out / "supply_base_risk_by_material.csv")
     detail.to_csv(out / "supply_base_risk_product_detail.csv", index=False)
     summary.to_csv(out / "supply_base_risk_by_product.csv", index=False)
-    with pd.option_context("display.width", 250, "display.max_columns", 30, "display.float_format", "{:.2f}".format):
-        print(mat.to_string()); print(); print(detail.to_string(index=False)); print(); print(summary.T.to_string())
+    with pd.option_context(
+        "display.width",
+        250,
+        "display.max_columns",
+        30,
+        "display.float_format",
+        "{:.2f}".format,
+    ):
+        print(mat.to_string())
+        print()
+        print(detail.to_string(index=False))
+        print()
+        print(summary.T.to_string())
 
 
 if __name__ == "__main__":

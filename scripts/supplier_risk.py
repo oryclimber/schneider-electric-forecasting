@@ -82,10 +82,14 @@ def _score(value, low, high, higher_is_worse):
 def score_supplier(path) -> dict:
     data = _load(path)
     s = {k: _series(data, k) for k in LABELS}
-    bs = pd.concat([s["cur_assets"], s["cur_liab"], s["assets"], s["liab"], s["equity"]], axis=1)
+    bs = pd.concat(
+        [s["cur_assets"], s["cur_liab"], s["assets"], s["liab"], s["equity"]], axis=1
+    )
     bs.columns = ["ca", "cl", "assets", "liab", "equity"]
     bs = bs.dropna(subset=["assets", "equity"]).sort_index()
-    row: dict = {"supplier": path.name.split("_-_")[1].split("_Company")[0].replace("_", " ")}
+    row: dict = {
+        "supplier": path.name.split("_-_")[1].split("_Company")[0].replace("_", " ")
+    }
     if bs.empty:
         return row
     year = int(bs.index[-1])
@@ -93,7 +97,9 @@ def score_supplier(path) -> dict:
     liab = last.liab if pd.notna(last.liab) else last.assets - last.equity
     row["bs_year"] = year
     row["leverage_liab_to_equity"] = liab / last.equity if last.equity > 0 else np.inf
-    row["current_ratio"] = last.ca / last.cl if pd.notna(last.ca) and last.cl else np.nan
+    row["current_ratio"] = (
+        last.ca / last.cl if pd.notna(last.ca) and last.cl else np.nan
+    )
     row["equity_ratio"] = last.equity / last.assets
     ebitda = s["ebitda"].dropna()
     if len(ebitda):
@@ -103,7 +109,9 @@ def score_supplier(path) -> dict:
         assets_then = bs.assets.get(e_year, last.assets)
         row["ebitda_to_assets"] = ebitda.iloc[-1] / assets_then
         interest = s["interest"].get(e_year, np.nan)
-        row["ebitda_interest_cover"] = ebitda.iloc[-1] / interest if interest else np.nan
+        row["ebitda_interest_cover"] = (
+            ebitda.iloc[-1] / interest if interest else np.nan
+        )
         if len(prior) and prior.mean() > 0:
             row["ebitda_trend_vs_prior3"] = ebitda.iloc[-1] / prior.mean() - 1
         else:
@@ -116,12 +124,20 @@ def rate(table: pd.DataFrame) -> pd.DataFrame:
     scores = pd.DataFrame(index=table.index)
     # ASSUMPTION: all cut-offs below (and the equal indicator weights) are judgment
     # values, not calibrated to defaults; see the module docstring.
-    scores["leverage"] = table.leverage_liab_to_equity.map(lambda v: _score(v, 2, 4, True))
+    scores["leverage"] = table.leverage_liab_to_equity.map(
+        lambda v: _score(v, 2, 4, True)
+    )
     scores["liquidity"] = table.current_ratio.map(lambda v: _score(v, 1.0, 1.5, False))
-    scores["profit_level"] = table.ebitda_to_assets.map(lambda v: _score(v, 0.02, 0.08, False))
+    scores["profit_level"] = table.ebitda_to_assets.map(
+        lambda v: _score(v, 0.02, 0.08, False)
+    )
     trend = table.ebitda_trend_vs_prior3.map(lambda v: _score(v, -0.40, -0.10, False))
-    scores["profit_trend"] = trend.where(~table.ebitda_negative.fillna(False).astype(bool), 2)
-    scores["interest_cover"] = table.ebitda_interest_cover.map(lambda v: _score(v, 1.5, 4, False))
+    scores["profit_trend"] = trend.where(
+        ~table.ebitda_negative.fillna(False).astype(bool), 2
+    )
+    scores["interest_cover"] = table.ebitda_interest_cover.map(
+        lambda v: _score(v, 1.5, 4, False)
+    )
     table = table.join(scores.add_prefix("score_"))
     table["risk_score"] = scores.mean(axis=1)
     table["indicators_used"] = scores.notna().sum(axis=1)
@@ -145,8 +161,17 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     table = build()
     table.to_csv(out / "supplier_risk_scorecard.csv")
-    with pd.option_context("display.width", 250, "display.max_columns", 30, "display.float_format", "{:.2f}".format):
-        print(table.drop(columns=[c for c in table if c.startswith("score_")]).to_string())
+    with pd.option_context(
+        "display.width",
+        250,
+        "display.max_columns",
+        30,
+        "display.float_format",
+        "{:.2f}".format,
+    ):
+        print(
+            table.drop(columns=[c for c in table if c.startswith("score_")]).to_string()
+        )
         print(table.filter(like="score_").assign(rating=table.rating).to_string())
 
 

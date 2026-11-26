@@ -32,8 +32,12 @@ FM = config.DATA_DIR / (
 )
 # 2026 P50, synthetic (documentation/strategy_pack.md section 3)
 SYNTHETIC_P50 = {
-    "Siemens": 13762, "ABB": 12273, "Schneider": 12233,
-    "Eaton": 11560, "Ormazabal": 9652, "SGC": 9154,
+    "Siemens": 13762,
+    "ABB": 12273,
+    "Schneider": 12233,
+    "Eaton": 11560,
+    "Ormazabal": 9652,
+    "SGC": 9154,
 }
 OUT = config.DATA_DIR / "submission"
 TARGET_MARGIN = 0.30
@@ -51,7 +55,11 @@ def _should_cost() -> pd.DataFrame:
 
 def main() -> None:
     rec = pd.read_csv(OUT / "offer_matrix_recommendation.csv")
-    adj = rec[rec["product"].str.startswith("RM6")].set_index("offer_horizon_m").quote_adj_pct
+    adj = (
+        rec[rec["product"].str.startswith("RM6")]
+        .set_index("offer_horizon_m")
+        .quote_adj_pct
+    )
     sc = _should_cost()
     ours = SYNTHETIC_P50["Schneider"]
 
@@ -59,7 +67,9 @@ def main() -> None:
     df["synthetic_p50_2026"] = pd.Series(SYNTHETIC_P50)
     df["vs_our_base_pct"] = 100 * (df.synthetic_p50_2026 / ours - 1)
     for h, a in adj.items():
-        df[f"vs_our_quote_{h}m_pct"] = 100 * (df.synthetic_p50_2026 / (ours * (1 + a / 100)) - 1)
+        df[f"vs_our_quote_{h}m_pct"] = 100 * (
+            df.synthetic_p50_2026 / (ours * (1 + a / 100)) - 1
+        )
     df["price_to_should_cost_x"] = df.synthetic_p50_2026 / df.total
     df["price_at_30pct_margin"] = df.total / (1 - TARGET_MARGIN)
     for c in ["material", "process", "labour", "overhead"]:
@@ -71,12 +81,17 @@ def main() -> None:
         df[f"should_price_{h}m"] = df.price_at_30pct_margin * (1 + a / 100)
     df.index.name = "brand"
     df.round(2).to_csv(OUT / "competitor_price_comparison.csv")
-    print("LIMITATION: should-cost columns rest on inferred part masses and are directional "
-          "(see documentation/strategy_pack.md section 3).")
+    print(
+        "LIMITATION: should-cost columns rest on inferred part masses and are directional "
+        "(see documentation/strategy_pack.md section 3)."
+    )
     pd.set_option("display.width", 250)
     print(df.round(1).to_string())
-    print("\nOur quote (RM6, adj %):", adj.round(2).to_dict(),
-          {h: round(ours * (1 + a / 100)) for h, a in adj.items()})
+    print(
+        "\nOur quote (RM6, adj %):",
+        adj.round(2).to_dict(),
+        {h: round(ours * (1 + a / 100)) for h, a in adj.items()},
+    )
 
 
 if __name__ == "__main__":

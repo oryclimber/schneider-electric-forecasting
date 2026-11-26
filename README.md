@@ -41,8 +41,10 @@ for reconciliation and context; they are not silently merged into the core panel
 
 ```text
 src/schneider_electric_forecasting/   ingestion, validation, availability, features, models, diagnostics
-scripts/                            audit, consolidation, notebook execution, reporting
-notebooks/                          four unexecuted, reproducible source notebooks
+scripts/                            audit, consolidation, notebook execution, reporting,
+                                    challenge pack, offer matrix, supplier and competitor analysis
+notebooks/                          six unexecuted source notebooks (four phase notebooks,
+                                    plus licensed-series/epoxy and VAR/VECM forecasting)
 tests/                              synthetic regression tests; no client data required
 data/                               confidential, ignored local sources and outputs
   audit/                            inventory, sheet inspection, consolidation decisions
@@ -227,9 +229,28 @@ uv run --locked python scripts/build_challenge_pack.py
 It writes a 42-row challenge-format CSV, a partial monetary BOM cost index, BOM
 coverage, offer-rule scenarios, figures, an Excel workbook and a self-contained
 HTML deck under `data/submission/`. The deck is rebuilt with
-`uv run --locked python scripts/build_strategy_deck.py`. The five locked decisions are in
-`documentation/decisions.md`; the commercial rule and strategy are in
-`documentation/offer_rule.md` and `documentation/strategy_pack.md`.
+`uv run --locked python scripts/build_strategy_deck.py`. The commercial rule is described in
+`documentation/submission_method.md` and the strategy in `documentation/strategy_pack.md`.
+
+### Offer matrix, supplier risk and competitor view
+
+Run after the challenge pack (details and order in `documentation/submission_method.md`):
+
+```bash
+uv run --locked python scripts/offer_matrix.py
+uv run --locked python scripts/supplier_risk.py
+uv run --locked python scripts/supplier_material_map.py
+uv run --locked python scripts/supplier_product_risk.py
+uv run --locked python scripts/supplier_offer_terms.py
+uv run --locked python scripts/competitor_pricing.py
+uv run --locked python scripts/competitive_risk_view.py
+```
+
+They write the offer matrix, supplier scorecard and supplier-to-material map, supply-base
+risk, supplier-adjusted offer terms and stress scenarios, the competitor comparison and
+`competitive_risk_view.csv` (with a tolerance sensitivity table) to `data/submission/`.
+Findings: `documentation/supplier_competitor_report.md`. Competitor prices are synthetic;
+supplier links and ratings are working assumptions.
 
 An interactive decision tool is also available:
 

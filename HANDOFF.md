@@ -51,6 +51,12 @@ Run from a full repository checkout after `uv sync --locked --dev`:
 | Probabilistic forecasting | `uv run --locked python scripts/run_notebook.py --phase5` | `phase5/` |
 | Re-render generated reports | `uv run --locked python scripts/build_reports.py --report all` | `eda_presentation/`, `phase4/`, `phase5/` |
 
+Challenge-pack, supplier and competitor scripts (`build_challenge_pack.py`,
+`offer_matrix.py`, `supplier_risk.py`, `supplier_material_map.py`,
+`supplier_product_risk.py`, `supplier_offer_terms.py`, `competitor_pricing.py`,
+`competitive_risk_view.py`) write to `submission/`; order and caveats are in
+`documentation/submission_method.md`.
+
 Equivalent non-notebook experiment entry points are `scripts/run_phase3.py`,
 `scripts/run_phase4.py` and `scripts/run_phase5.py`. Phase 5 requires the Phase 4
 configuration, frozen selection and final forecast artifacts, and verifies Phase

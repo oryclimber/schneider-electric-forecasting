@@ -81,6 +81,8 @@ branch or rewrite its history as part of staging this audit.
 
 ## Validation evidence
 
+> Later update (26 Nov 2026): the workspace suite now collects 102 tests, all passing, after the supplier, offer-matrix and competitor scripts were added. The figures below are from the original audit and were not re-run.
+
 - Complete workspace suite: **96 passed**, with one existing statsmodels API
   FutureWarning in a reference-comparison test. No failures or skipped private
   data tests.

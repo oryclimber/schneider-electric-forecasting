@@ -219,7 +219,7 @@ def build():
   <p class="sub">adjustment = material share × (P50/100 − 1) + material share ×
   50% × (P90 − P50)/100</p>
   {offer_table}
-  <div class="foot">Material share: 45% RM6, 40% AirSeT. Working assumptions.</div>
+  <div class="foot">Material share: 80% RM6 and AirSeT. Working assumptions.</div>
 </section>
 
 <section class="slide">

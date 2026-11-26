@@ -72,9 +72,31 @@ BOM index to a full product cost or to the material forecasts.
 
 ## Offer rule
 
-The rule is documented in `documentation/offer_rule.md`. It uses the BOM P50/P90,
+The rule is implemented in `scripts/build_challenge_pack.py` and extended by `scripts/offer_matrix.py`. It uses the BOM P50/P90,
 a material-share assumption, a risk-buffer fraction and a target margin. The
-working assumptions are 45%/40% material share and 50% of the P90-P50 gap.
+working assumptions are an 80% material share for RM6 (from the should-cost
+teardown) and AirSeT (assumed similar), and 50% of the P90-P50 gap.
+
+## Offer matrix, supplier risk and competitor view
+
+Run after the challenge pack, in this order (the last two read CSVs written by
+the earlier scripts in `data/submission/`):
+
+```bash
+uv run --locked python scripts/offer_matrix.py            # quote adjustment, validity, indexation
+uv run --locked python scripts/supplier_risk.py           # supplier scorecard
+uv run --locked python scripts/supplier_material_map.py   # supplier-to-material map (BOM shares from the BOM)
+uv run --locked python scripts/supplier_product_risk.py   # supply-base risk by material and product
+uv run --locked python scripts/supplier_offer_terms.py    # supplier buffer, validity cap, stress cases
+uv run --locked python scripts/competitor_pricing.py      # competitor and should-cost comparison
+uv run --locked python scripts/competitive_risk_view.py   # our quote vs competitors, with sensitivity
+```
+
+Findings are summarised in `documentation/supplier_competitor_report.md`. Validity
+is the longest window whose P90 price impact stays within a tolerance (10% of the
+target margin by default); when no window qualifies the result is the 1-month floor.
+Competitor prices are synthetic and held flat; supplier links, ratings, stress sizes
+and the tolerance are working assumptions.
 
 ## Validation checklist
 
@@ -93,4 +115,6 @@ working assumptions are 45%/40% material share and 50% of the P90-P50 gap.
 - realised margin improvement;
 - calibrated P10/P90 coverage;
 - actual competitor prices (the RMU benchmark is synthetic);
-- permission to redistribute licensed steel or supplier data.
+- permission to redistribute licensed steel or supplier data;
+- validated supplier-to-material links or supplier volume splits;
+- a confirmed quote validity (the default tolerance returns the 1-month floor).

@@ -71,7 +71,7 @@ def test_offer_rule_uses_the_p90_p50_tail():
     )
     scenarios = MODULE._offer_scenarios(forecast)
     row = scenarios.iloc[0]
-    expected = 0.45 * 0.50 * (130.0 - 100.0)
+    expected = 0.80 * 0.50 * (130.0 - 100.0)
     assert row["recommended_price_adjustment_pct"] == expected
     assert row["quote_validity_months"] == 3
     assert row["indexation_trigger_pct"] == 5.0

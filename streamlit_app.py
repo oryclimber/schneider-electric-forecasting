@@ -26,8 +26,8 @@ DEFAULT_MARGIN = {
     "RMAirSeT IIQ 24kV IEC": 0.25,
 }
 DEFAULT_MATERIAL_SHARE = {
-    "RM6_NE_IQI_433520": 0.45,
-    "RMAirSeT IIQ 24kV IEC": 0.40,
+    "RM6_NE_IQI_433520": 0.80,
+    "RMAirSeT IIQ 24kV IEC": 0.80,
 }
 
 st.set_page_config(
@@ -148,7 +148,7 @@ def main():
         material_share = st.slider(
             "Material share of price",
             min_value=0.10,
-            max_value=0.70,
+            max_value=0.90,
             value=DEFAULT_MATERIAL_SHARE[product],
             step=0.05,
         )

@@ -44,23 +44,30 @@ Run from a full repository checkout after `uv sync --locked --dev`:
 
 | Purpose | Command | Generated output directory under the data root |
 |---|---|---|
-| Read-only source inventory | `uv run --locked python scripts/audit_data.py` | `audit/` |
-| Current EDA | `uv run --locked python scripts/run_notebook.py` | `eda_presentation/` |
-| Features and baselines | `uv run --locked python scripts/run_notebook.py --phase3` | `phase3/` |
-| Advanced model evaluation | `uv run --locked python scripts/run_notebook.py --phase4` | `phase4/` |
-| Probabilistic forecasting | `uv run --locked python scripts/run_notebook.py --phase5` | `phase5/` |
-| Re-render generated reports | `uv run --locked python scripts/build_reports.py --report all` | `eda_presentation/`, `phase4/`, `phase5/` |
+| Read-only source inventory | `uv run --locked python scripts/cli.py audit` | `audit/` |
+| Current EDA | `uv run --locked python scripts/cli.py notebook --phase 2` | `eda_presentation/` |
+| Features and baselines | `uv run --locked python scripts/cli.py notebook --phase 3` | `phase3/` |
+| Advanced model evaluation | `uv run --locked python scripts/cli.py notebook --phase 4` | `phase4/` |
+| Probabilistic forecasting | `uv run --locked python scripts/cli.py notebook --phase 5` | `phase5/` |
+| Re-render generated reports | `uv run --locked python scripts/cli.py report --report all` | `eda_presentation/`, `phase4/`, `phase5/` |
 
-Challenge-pack, supplier and competitor scripts (`build_challenge_pack.py`,
-`offer_matrix.py`, `supplier_risk.py`, `supplier_material_map.py`,
-`supplier_product_risk.py`, `supplier_offer_terms.py`, `competitor_pricing.py`,
-`competitive_risk_view.py`) write to `submission/`; order and caveats are in
-`documentation/submission_method.md`.
+Challenge-pack, supplier and competitor workflows write to `submission/`:
 
-Equivalent non-notebook experiment entry points are `scripts/run_phase3.py`,
-`scripts/run_phase4.py` and `scripts/run_phase5.py`. Phase 5 requires the Phase 4
+```bash
+uv run --locked python scripts/cli.py pack
+uv run --locked python scripts/cli.py supplier
+uv run --locked python scripts/cli.py offer
+uv run --locked python scripts/cli.py competitor
+uv run --locked python scripts/cli.py deck
+```
+
+Order and caveats are in `documentation/submission_method.md`. Implementation
+modules live in `scripts/commands/`; `scripts/cli.py` is the only entry point.
+
+Equivalent non-notebook experiment entry points are `scripts/cli.py phase 3`,
+`scripts/cli.py phase 4` and `scripts/cli.py phase 5`. Phase 5 requires the Phase 4
 configuration, frozen selection and final forecast artifacts, and verifies Phase
-4 file hashes without modifying them. `scripts/build_reports.py` only re-renders
+4 file hashes without modifying them. `scripts/cli.py report` only re-renders
 existing generated CSVs and fails when they are absent; Phase 3's report is
 written by `run_phase3.py`. All helper/reporting scripts are versioned
 source candidates in `scripts/`; none is imported from an ignored data directory.

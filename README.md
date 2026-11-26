@@ -6,6 +6,30 @@ Members: Martin LAU, Eleanor LIARD, Yunxian LIU, Benedikt WATZINGER, Olivia YOUN
 
 ## Repository structure
 
+The pipeline stages are numbered in execution order; `config.py` is unnumbered
+because every stage reads it.
+
+| Stage | Folder | Modules |
+|---|---|---|
+| 01 | `_01_ingestion/` | `utils.py`, `rm_prices.py`, `energy_prices.py`, `bom.py`, `rmu_benchmark.py` |
+| 02 | `_02_validation/` | `_01_checks.py`, `_02_availability.py` |
+| 03 | `_03_eda/` | `_01_tables.py`, `_02_plots.py`, `_03_report.py` |
+| 04 | `_04_features/` | `_01_builders.py` |
+| 05 | `_05_modeling/` | `_01_baselines.py`, `_02_advanced.py`, `_03_probabilistic.py`, `_04_random_walk.py` |
+
+```text
+src/schneider_electric_forecasting/   five numbered stage folders + config.py
+scripts/cli.py                       single entry point for all workflows
+scripts/commands/                    implementation modules behind the CLI
+scripts/consolidate_data.py          manual, destructive migration utility
+notebooks/                           six unexecuted source notebooks
+tests/                               synthetic regression tests; no client data required
+documentation/                       method, decisions, strategy, slides and handover guides
+data/                                confidential, ignored local sources and outputs
+  submission/                        generated challenge pack, calculator inputs, deck
+  phase3/ phase4/ phase5/             generated private research results
+```
+
 ## Getting Started
 
 Requires [uv](https://docs.astral.sh/uv/getting-started/installation/).
@@ -18,13 +42,51 @@ uv sync --all-groups
 uv run pre-commit install
 ```
 
-## Completion checklist
+## Using the deliverables
 
-(WIP)
+The handover guide is [documentation/deliverables_guide.md](documentation/deliverables_guide.md).
+The short version:
 
-- [ ] Item 1
-- [ ] Item 2
-- [ ] Item 3
+1. **Build the pack** (requires the authorized workbooks):
+   ```bash
+   uv sync --locked --dev
+   uv run --locked python scripts/cli.py pack
+   uv run --locked python scripts/cli.py offer
+   ```
+2. **Use the calculator:**
+   ```bash
+   uv sync --group app
+   uv run --group app streamlit run streamlit_app.py
+   ```
+3. **Open the pack:** `data/submission/schneider_challenge_pack.xlsx`,
+   `data/submission/strategy_deck.html`, and the figures.
+4. **Use the slide copy:** [documentation/presentation_slides.md](documentation/presentation_slides.md)
+   for the pricing, recommendations and executive-summary slides.
+5. **Read the decision record before quoting:** [documentation/decisions.md](documentation/decisions.md),
+   [documentation/offer_rule.md](documentation/offer_rule.md) and
+   [documentation/executive_summary.md](documentation/executive_summary.md).
+
+The pack is decision support, not Schneider policy. The key working assumptions
+are the 80% material share of price, 50% tail buffer, 1-month validity and the
+copper/carbon-steel indexation triggers. Confirm them with Schneider before a
+customer uses the output.
+
+### Command reference
+
+| Command | What it does |
+|---|---|
+| `scripts/cli.py audit` | Read-only source inventory and hashing |
+| `scripts/cli.py phase {3,4,5}` | Run a research phase headlessly |
+| `scripts/cli.py notebook --phase {2,3,4,5}` | Execute the matching source notebook |
+| `scripts/cli.py pack` | Build the 42-row forecast pack, BOM index, Excel and figures |
+| `scripts/cli.py supplier` | Supplier scorecard, material map, product risk and offer terms |
+| `scripts/cli.py offer` | Offer matrix and competitor price comparison |
+| `scripts/cli.py competitor` | Competitor risk view and tolerance sensitivity |
+| `scripts/cli.py report --report {all,eda,phase4,phase5}` | Rebuild generated reports |
+| `scripts/cli.py deck` | Rebuild the self-contained HTML strategy deck |
+
+`scripts/consolidate_data.py` remains separate because it moves and archives
+files; never run it as part of a normal build.
 
 The canonical source for material definitions, quantities and mappings is
 `data/RM_Prices_XHEC_Challenge_v1.xlsx`. Its only sheet is `BOM_Materials`; it
@@ -39,21 +101,7 @@ EUR material prices are recomputed from USD prices and USD-per-EUR rates.
 Supplementary steel, epoxy, LME, supplier and market benchmark files remain local
 for reconciliation and context; they are not silently merged into the core panel.
 
-```text
-src/schneider_electric_forecasting/   ingestion, validation, availability, features, models, diagnostics
-scripts/                            audit, consolidation, notebook execution, reporting,
-                                    challenge pack, offer matrix, supplier and competitor analysis
-notebooks/                          six unexecuted source notebooks (four phase notebooks,
-                                    plus licensed-series/epoxy and VAR/VECM forecasting)
-tests/                              synthetic regression tests; no client data required
-data/                               confidential, ignored local sources and outputs
-  audit/                            inventory, sheet inspection, consolidation decisions
-  .archive/before_v1/                earlier BOMs, exports and prior EDA
-  eda_presentation/                  current catalog, checks, tables, figures and report
-  phase3/ phase4/ phase5/             generated private results, experiments and scenarios
-```
-
-Install and execute from a full repository checkout (Python 3.14+, uv 0.13.8 as in CI). The script entry points below require the repository scripts/ directory; the package console greeting is not a forecasting entry point. On macOS, native tree models require an OpenMP runtime (for example libomp installed through your package manager).
+Install and execute from a full repository checkout (Python 3.14+, uv 0.13.8 as in CI). Run scripts from the repository root; they are thin entry points over the installed package. On macOS, native tree models require an OpenMP runtime (for example libomp installed through your package manager).
 
 Obtain the three authorized input workbooks from the data owner. They are intentionally absent from Git. Preserve the paths above or set SCHNEIDER_DATA_DIR to an approved absolute directory outside the repository with the same internal layout. A fresh clone needs no private Python scripts or historical EDA archive.
 
@@ -61,8 +109,8 @@ Install and run:
 
 ```bash
 uv sync --locked --dev
-uv run --locked python scripts/audit_data.py
-uv run --locked python scripts/run_notebook.py
+uv run --locked python scripts/cli.py audit
+uv run --locked python scripts/cli.py notebook --phase 2
 uv run --locked pytest -q
 uv run --locked ruff check .
 uv run --locked ruff format --check .
@@ -93,19 +141,19 @@ shares are not cost shares, and PPI proxies are not material-grade prices.
 
 ## Phase 3: features and baseline forecasting
 
-`features.py` builds each origin's snapshot before calculating price/return lags,
+`_04_features/_01_builders.py` builds each origin's snapshot before calculating price/return lags,
 rolling statistics, momentum, seasonal calendar variables, energy/FX drivers and
 economically defined cross-material return spreads. Lags are relative to the last
 observable month; cutoff and age metadata expose publication-delay staleness.
-`baselines.py` compares LOCF, seasonal naive, drift and historical mean return on
+`_05_modeling/_01_baselines.py` compares LOCF, seasonal naive, drift and historical mean return on
 identical eligible rolling windows. Forecast distances include the gap from the
 last observable month to the actual target, rather than assuming current prices
 are already available.
 
 ```bash
-uv run --locked python scripts/run_notebook.py --phase3
+uv run --locked python scripts/cli.py notebook --phase 3
 # Alternatively execute the pipeline without notebook display:
-uv run --locked python scripts/run_phase3.py
+uv run --locked python scripts/cli.py phase 3
 ```
 
 The source notebook is `notebooks/feature_engineering_baseline_forecasting.ipynb`.
@@ -131,7 +179,7 @@ actuals or uncertainty intervals.
 
 ## Phase 4: advanced forecasting and nested evaluation
 
-`advanced.py` extends the existing feature, availability and baseline modules with
+`_05_modeling/_02_advanced.py` extends the existing feature, availability and baseline modules with
 ARIMA, ETS, Ridge, Elastic Net, XGBoost and LightGBM, each evaluated as price levels
 and cumulative log returns. A fixed 24-feature economic subset limits complexity.
 Imputation and scaling fit only on training rows inside each inner/outer fold.
@@ -139,9 +187,9 @@ Each training fold excludes labels not yet published under the availability rule
 
 ```bash
 uv sync --locked --dev
-uv run --locked python scripts/run_notebook.py --phase4
+uv run --locked python scripts/cli.py notebook --phase 4
 # Or run the experiment and reporting without notebook display:
-uv run --locked python scripts/run_phase4.py
+uv run --locked python scripts/cli.py phase 4
 # Optional local experiment UI:
 uv run --locked mlflow ui --backend-store-uri sqlite:///data/phase4/mlflow.db --host 127.0.0.1
 ```
@@ -177,16 +225,16 @@ or probabilistic forecasts are implemented in this phase.
 
 ```bash
 uv sync --locked --dev
-uv run --locked python scripts/run_notebook.py --phase5
+uv run --locked python scripts/cli.py notebook --phase 5
 # Alternatively run the same calculations without notebook display:
-uv run --locked python scripts/run_phase5.py
+uv run --locked python scripts/cli.py phase 5
 ```
 
-`probabilistic.py` reuses the existing origin snapshots and source-specific lag
+`_05_modeling/_03_probabilistic.py` reuses the existing origin snapshots and source-specific lag
 assumptions. It implements LOCF forecast-error quantiles, historical simulation,
 Gaussian log random walks, centered empirical innovation bootstrap, three-month
 moving-block bootstrap, statistically gated GARCH and signed-error conformal
-intervals. `random_walk.py` extends the earlier ADF/KPSS and ACF/PACF diagnostics
+intervals. The same folder's `_04_random_walk.py` extends the earlier ADF/KPSS and ACF/PACF diagnostics
 with robust variance ratios, Ljung–Box, HAC drift, ARCH-LM and break sensitivity.
 Global Holm and exploratory test-family BH corrections are exported with each
 test's null; no non-rejection is labeled proof of a random walk.
@@ -223,13 +271,13 @@ The standalone challenge pack builds the September-origin submission without
 rerunning the research phases:
 
 ```bash
-uv run --locked python scripts/build_challenge_pack.py
+uv run --locked python scripts/cli.py pack
 ```
 
 It writes a 42-row challenge-format CSV, a partial monetary BOM cost index, BOM
 coverage, offer-rule scenarios, figures, an Excel workbook and a self-contained
 HTML deck under `data/submission/`. The deck is rebuilt with
-`uv run --locked python scripts/build_strategy_deck.py`. The commercial rule is described in
+`uv run --locked python scripts/cli.py deck`. The commercial rule is described in
 `documentation/submission_method.md` and the strategy in `documentation/strategy_pack.md`.
 
 ### Offer matrix, supplier risk and competitor view
@@ -237,13 +285,11 @@ HTML deck under `data/submission/`. The deck is rebuilt with
 Run after the challenge pack (details and order in `documentation/submission_method.md`):
 
 ```bash
-uv run --locked python scripts/offer_matrix.py
-uv run --locked python scripts/supplier_risk.py
-uv run --locked python scripts/supplier_material_map.py
-uv run --locked python scripts/supplier_product_risk.py
-uv run --locked python scripts/supplier_offer_terms.py
-uv run --locked python scripts/competitor_pricing.py
-uv run --locked python scripts/competitive_risk_view.py
+uv run --locked python scripts/cli.py pack
+uv run --locked python scripts/cli.py supplier
+uv run --locked python scripts/cli.py offer
+uv run --locked python scripts/cli.py competitor
+uv run --locked python scripts/cli.py deck
 ```
 
 They write the offer matrix, supplier scorecard and supplier-to-material map, supply-base
@@ -259,9 +305,11 @@ uv sync --group app
 uv run --group app streamlit run streamlit_app.py
 ```
 
-The app lets a non-coder change the margin, material-share and risk-buffer
-assumptions and see the quote impact immediately. It reads the generated pack
-from `data/submission/`; run the pack builder first.
+The app follows the deck: an executive summary, the pricing and quote rule, the
+BOM cost and material forecasts, the SF6-free strategy, and the evidence/caveats
+tab. A non-coder can change the product, horizon, margin, material share, buffer
+and competitor price, then see the quote impact immediately. It reads the
+generated pack from `data/submission/`; run the pack builder first.
 
 The point forecast is LOCF and the P10/P90 intervals are empirical, not
 calibrated guarantees. The BOM index covers 92.7% of RM6 mass and 85.9% of
@@ -270,7 +318,7 @@ disclosed. Steel-index use still requires licence confirmation.
 
 ## Reproducibility, findings and Phase 6 handoff
 
-Run the four notebooks in order with `scripts/run_notebook.py`: EDA, `--phase3`,
+Run the four notebooks in order with `scripts/cli.py notebook --phase 2`: EDA, `--phase3`,
 `--phase4`, `--phase5`. Phase 5 now fails
 closed if the Phase 4 experiment configuration, frozen selection and final point
 forecasts are missing; restoring approved local artifacts is an alternative to
@@ -279,7 +327,7 @@ source notebooks remain free of outputs. Do not run the migration/consolidation
 utility merely to reproduce forecasts.
 
 Generated reports and figures can be re-rendered without rerunning models with
-`uv run --locked python scripts/build_reports.py --report all` (or `eda`,
+`uv run --locked python scripts/cli.py report --report all` (or `eda`,
 `phase4`, `phase5`); the command fails when the corresponding generated CSVs are
 absent. Phase 3's report is written by `run_phase3.py` itself.
 

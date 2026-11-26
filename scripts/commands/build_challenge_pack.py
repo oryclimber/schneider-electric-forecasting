@@ -15,7 +15,7 @@ price. The BOM index uses direct EUR/t prices for copper, aluminium, steel and
 epoxy; plastics, brass and unidentified materials are excluded and disclosed.
 
 Usage:
-    uv run --locked python scripts/build_challenge_pack.py
+    uv run --locked python scripts/cli.py pack
 """
 
 from __future__ import annotations

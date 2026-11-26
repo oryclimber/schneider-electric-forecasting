@@ -33,7 +33,7 @@ ASSUMPTIONS / LIMITATIONS
   judgment cut-off. All output is directional scenario analysis, not pricing policy.
 
 Usage:
-    uv run --locked python scripts/competitive_risk_view.py
+    uv run --locked python scripts/cli.py competitor
 """
 
 from __future__ import annotations
@@ -162,7 +162,7 @@ def sensitivity() -> pd.DataFrame:
     The supplier buffer and supplier validity cap do not depend on it, so they are
     taken from supplier_offer_terms.csv.
     """
-    import offer_matrix
+    from . import offer_matrix
 
     terms = pd.read_csv(OUT / "supplier_offer_terms.csv").set_index(
         ["product", "offer_horizon_m"]

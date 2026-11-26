@@ -15,7 +15,7 @@ def data_root():
     Returns:
         An absolute Path. The script never writes outside this root.
     """
-    project = Path(__file__).resolve().parents[1]
+    project = Path(__file__).resolve().parents[2]
     configured = Path(os.environ.get("SCHNEIDER_DATA_DIR", "data")).expanduser()
     return configured if configured.is_absolute() else project / configured
 

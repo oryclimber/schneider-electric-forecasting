@@ -6,7 +6,7 @@ the downside scenario, not the price forecast.
 Method
 - Ratings come from ``supplier_risk.py``; low = 1, medium = 2, high = 3.
 - Each priced material has a set of suppliers (``MATERIAL_SUPPLIERS``, from
-  scripts/supplier_material_map.py, which also writes the map CSV). ASSUMPTION: suppliers of the same
+  scripts/cli.py supplier, which also writes the map CSV). ASSUMPTION: suppliers of the same
   material are weighted equally; no volume split exists in the data.
 - Base supply-base risk of a material = equal-weighted mean of its suppliers'
   ratings. Downside = the weakest (highest-rated) supplier.
@@ -18,7 +18,7 @@ Method
   materials do not pull the figure toward zero.
 
 Usage:
-    uv run --locked python scripts/supplier_product_risk.py
+    uv run --locked python scripts/cli.py supplier
 """
 
 from __future__ import annotations
@@ -27,17 +27,18 @@ import unicodedata
 
 import numpy as np
 import pandas as pd
-from build_challenge_pack import (
+
+from schneider_electric_forecasting import config
+
+from .build_challenge_pack import (
     ORIGIN,
     PRODUCT_LABELS,
     PRODUCTS,
     _bom_quantities,
     _build_price_panel,
 )
-from supplier_material_map import MATERIAL_SUPPLIERS
-from supplier_risk import build as build_scorecard
-
-from schneider_electric_forecasting import config
+from .supplier_material_map import MATERIAL_SUPPLIERS
+from .supplier_risk import build as build_scorecard
 
 POINTS = {"low": 1, "medium": 2, "high": 3}  # ASSUMPTION: linear scoring of ratings
 

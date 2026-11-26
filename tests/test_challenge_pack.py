@@ -1,15 +1,13 @@
 """Regression checks for the standalone challenge pack builder."""
 
-import importlib.util
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_challenge_pack.py"
-SPEC = importlib.util.spec_from_file_location("build_challenge_pack", SCRIPT)
-MODULE = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(MODULE)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+from commands import build_challenge_pack as MODULE  # noqa: E402
 
 
 def test_month_start_handles_series_and_index():

@@ -238,7 +238,7 @@ The audit used read-only CSV parsing, workbook sheet/header and formula/error in
 | BOM and product cost modeling | Standalone BOM workbook; RM catalog and price series. | Partial monetary index only where authoritative quantities and compatible direct prices are validated. Mass weighting is a separate proxy method. |
 | Competitive benchmarking and pricing | Readable RMU synthetic benchmark; provisional RM6 benchmark workbook and PDF. | Market context and scenario comparison only after product/configuration, market, currency, tax and commercial-term comparability checks. |
 | Market intelligence | RMU and RM6 material; any October 2026 market report. | Contextual evidence, not actual margin outcomes; October report is retrospective only. |
-| Supplier financial risk | Nine supplier workbooks and archive. | Separate controlled analysis (scorecard in `scripts/supplier_risk.py`); the supplier-to-material link is inferred from public descriptions (`scripts/supplier_material_map.py`), not confirmed by Schneider, and it is not a monthly price-forecast target. |
+| Supplier financial risk | Nine supplier workbooks and archive. | Separate controlled analysis (scorecard in `scripts/cli.py supplier`); the supplier-to-material link is inferred from public descriptions (`scripts/cli.py supplier`), not confirmed by Schneider, and it is not a monthly price-forecast target. |
 | Reference documentation | Core README, data dictionary, source catalogs, workbook README/method tabs. | Definitions and provenance; verify local availability and licensing. |
 
 ## 4. Core data file organization

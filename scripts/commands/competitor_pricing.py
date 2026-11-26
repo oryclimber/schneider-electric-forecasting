@@ -17,7 +17,7 @@ fuse-links, ABB copper busbars). See documentation/strategy_pack.md section 3.
 Treat them as directional. Only the synthetic-P50 price comparison is independent of should-cost.
 
 Usage:
-    uv run --locked python scripts/competitor_pricing.py
+    uv run --locked python scripts/cli.py competitor
 """
 
 from __future__ import annotations

@@ -1,8 +1,9 @@
 """Clean-checkout reporting and configured notebook-output regression checks."""
 
-import importlib.util
+import importlib
 import json
 import re
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -13,11 +14,10 @@ from schneider_electric_forecasting import config
 
 
 def load_script(name):
-    path = Path(__file__).resolve().parents[1] / "scripts" / f"{name}.py"
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """Import an implementation module from the scripts/commands package."""
+    root = Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(root / "scripts"))
+    return importlib.import_module(f"commands.{name}")
 
 
 def test_current_eda_report_does_not_require_private_archive(tmp_path, monkeypatch):
@@ -63,7 +63,7 @@ def test_notebook_runner_respects_configured_output_root(tmp_path, monkeypatch):
 def test_notebook_script_imports_resolve_to_scripts_directory():
     root = Path(__file__).resolve().parents[1]
     pattern = re.compile(
-        r"^from\s+(run_\w+|build_\w+|audit_data|consolidate_data)\s+import",
+        r"^from\s+(commands\.)?(run_\w+|build_\w+|audit_data|consolidate_data)\s+import",
         flags=re.MULTILINE,
     )
     problems = []
@@ -85,10 +85,13 @@ def test_notebook_script_imports_resolve_to_scripts_directory():
                         f"{notebook.name}: local import before sys.path setup: "
                         f"{match.group(0)}"
                     )
-                if not (root / "scripts" / f"{match.group(1)}.py").is_file():
-                    problems.append(
-                        f"{notebook.name}: missing scripts/{match.group(1)}.py"
-                    )
+                relative = (
+                    f"commands/{match.group(2)}.py"
+                    if match.group(1)
+                    else f"{match.group(2)}.py"
+                )
+                if not (root / "scripts" / relative).is_file():
+                    problems.append(f"{notebook.name}: missing scripts/{relative}")
     assert not problems, problems
 
 

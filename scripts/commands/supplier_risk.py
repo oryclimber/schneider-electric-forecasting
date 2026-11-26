@@ -20,7 +20,7 @@ The workbooks do not say what each supplier sells to Schneider, so this script
 does NOT map suppliers to materials; see data/submission/supplier_material_map.csv.
 
 Usage:
-    uv run --locked python scripts/supplier_risk.py
+    uv run --locked python scripts/cli.py supplier
 """
 
 from __future__ import annotations
@@ -33,7 +33,13 @@ import pandas as pd
 
 from schneider_electric_forecasting import config
 
-SUPPLIER_DIR = config.DATA_DIR / "Supplier_balancesheet"
+_SUPPLIER_CANDIDATES = (
+    config.DATA_DIR / "Supplier_balancesheet",
+    config.DATA_DIR / "Data" / "Supplier_balancesheet",
+)
+SUPPLIER_DIR = next(
+    (p for p in _SUPPLIER_CANDIDATES if p.is_dir()), _SUPPLIER_CANDIDATES[0]
+)
 LABELS = {
     "ebitda": "EBITDA",
     "net_income": "Net Income Available to Common Stockholders",

@@ -1,7 +1,7 @@
 """Run the nested Phase 4 experiment with local-only MLflow tracking.
 
 Usage:
-    uv run --locked python scripts/run_phase4.py
+    uv run --locked python scripts/cli.py phase 4
 
 Reads the authorized workbooks, evaluates ARIMA, ETS, Ridge, Elastic Net,
 XGBoost and LightGBM under nested rolling validation, freezes the selected
@@ -403,7 +403,7 @@ def main():
         for path in out.glob("*.csv"):
             mlflow.log_artifact(str(path))
         (out / "mlflow_run_id.txt").write_text(run.info.run_id + "\n")
-    from build_reports import build_phase4_report
+    from .build_reports import build_phase4_report
 
     build_phase4_report(out)
     print(f"Phase 4 complete: {out}", flush=True)

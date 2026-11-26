@@ -12,8 +12,8 @@ import pandas as pd
 # not importable as an installed module. Keep the path adjustment local and
 # avoid importing through a package that does not exist.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from audit_data import data_root  # noqa: E402
-from audit_data import main as inventory  # noqa: E402
+from commands.audit_data import data_root  # noqa: E402
+from commands.audit_data import main as inventory  # noqa: E402
 
 
 def main():

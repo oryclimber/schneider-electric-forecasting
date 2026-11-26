@@ -21,18 +21,19 @@ Levers (every parameter below is a working assumption)
   market. Only that supplier's volume (equal split) is hit.
 
 Usage:
-    uv run --locked python scripts/supplier_offer_terms.py
+    uv run --locked python scripts/cli.py supplier
 """
 
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from build_challenge_pack import MATERIAL_SHARES, PRODUCT_LABELS
-from offer_matrix import build as build_offer_matrix
-from supplier_product_risk import build_scorecard, material_risk, product_risk
 
 from schneider_electric_forecasting import config
+
+from .build_challenge_pack import MATERIAL_SHARES, PRODUCT_LABELS
+from .offer_matrix import build as build_offer_matrix
+from .supplier_product_risk import build_scorecard, material_risk, product_risk
 
 # ASSUMPTION (all five): working values chosen for scenario sizing, not estimated
 # from data. Replace with procurement quotes / re-sourcing estimates when available.

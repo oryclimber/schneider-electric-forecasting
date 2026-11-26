@@ -13,15 +13,16 @@ Single source of truth for the map. Two kinds of content:
 risk calculation and the CSV cannot disagree about who supplies what.
 
 Usage:
-    uv run --locked python scripts/supplier_material_map.py
+    uv run --locked python scripts/cli.py supplier
 """
 
 from __future__ import annotations
 
 import pandas as pd
-from build_challenge_pack import PRODUCTS, _bom_quantities
 
 from schneider_electric_forecasting import config
+
+from .build_challenge_pack import PRODUCTS, _bom_quantities
 
 # ASSUMPTION: the three sheet-metal fabricators are applied to every steel grade
 # (carbon, stainless, galvanised) because none states which grade it handles.

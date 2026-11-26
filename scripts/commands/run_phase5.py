@@ -1,7 +1,7 @@
 """Run the separate LOCF-based probabilistic policy (Phase 5).
 
 Usage:
-    uv run --locked python scripts/run_phase5.py
+    uv run --locked python scripts/cli.py phase 5
 
 Requires the frozen Phase 4 artifacts and verifies their hashes before and after
 the run. Writes predictive distributions, calibration ledgers, policy scores,
@@ -437,7 +437,7 @@ def main():
     )
     if file_hashes(config.DATA_DIR / "phase4") != phase4_before:
         raise ValueError("Frozen Phase 4 artifacts changed unexpectedly.")
-    from build_reports import build_phase5_report
+    from .build_reports import build_phase5_report
 
     build_phase5_report(out)
     print(f"Phase 5 complete: {out}", flush=True)

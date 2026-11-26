@@ -1,10 +1,10 @@
 """Execute a source notebook without committing its outputs.
 
 Usage:
-    uv run --locked python scripts/run_notebook.py            # Phase 2 EDA
-    uv run --locked python scripts/run_notebook.py --phase3   # Phase 3
-    uv run --locked python scripts/run_notebook.py --phase4   # Phase 4
-    uv run --locked python scripts/run_notebook.py --phase5   # Phase 5
+    uv run --locked python scripts/cli.py notebook --phase 2            # Phase 2 EDA
+    uv run --locked python scripts/cli.py notebook --phase 3   # Phase 3
+    uv run --locked python scripts/cli.py notebook --phase 4   # Phase 4
+    uv run --locked python scripts/cli.py notebook --phase 5   # Phase 5
 
 The notebook runs in an isolated Jupyter runtime whose kernel, cache and runtime
 directories are temporary. The executed copy, figures and tables are written
@@ -38,7 +38,7 @@ def main(phase3=False, phase4=False, phase5=False):
         ValueError: If more than one phase flag is supplied.
         FileNotFoundError: If the requested notebook is missing.
     """
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     from schneider_electric_forecasting.config import DATA_DIR
 
     name = (

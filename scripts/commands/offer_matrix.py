@@ -21,14 +21,17 @@ Levers (s = material share of price, C = simulated BOM cost index, 100 = now):
 All shares, margins, tolerance and buffer fraction are working assumptions.
 
 Usage:
-    uv run --locked python scripts/offer_matrix.py
+    uv run --locked python scripts/cli.py offer
 """
 
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from build_challenge_pack import (
+
+from schneider_electric_forecasting import config
+
+from .build_challenge_pack import (
     BUFFER_FRACTION,
     MATERIAL_SHARES,
     N_SIMULATIONS,
@@ -41,8 +44,6 @@ from build_challenge_pack import (
     _bom_quantities,
     _build_price_panel,
 )
-
-from schneider_electric_forecasting import config
 
 TOLERANCE_MARGIN_FRACTION = 0.10  # share of target margin an offer may lose
 SCENARIOS = {"downside": 0.90, "baseline": 0.50, "upside": 0.10}

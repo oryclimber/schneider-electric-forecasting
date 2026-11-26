@@ -976,7 +976,7 @@ These uncentered empirical joint scenarios are a dependence stress-analysis faci
 
 The repository is ready for controlled uncertainty analysis and further out-of-sample calibration, not reliable fixed-price-offer guarantees or complete BOM costing. Resolve missing brass mappings, unknown material composition, BOM mass inconsistencies, validated procurement units/currencies, approved monetary weights, regional/grade premiums and contract pass-through. Obtain publication vintages and validate joint/marginal calibration before translating price scenarios into exposure. Coverages and broad intervals in this report must be reviewed explicitly rather than selecting a better-looking confirmation method. No BOM cost forecasting or pricing optimization was performed.
 
-Reproduce with scripts/run_notebook.py --phase5. All confidential inputs and outputs remain Git-ignored. GARCH simulation follows [arch's documented recursion](https://arch.readthedocs.io/en/stable/univariate/forecasting.html). Conformal time-series assumptions follow the caution that [exchangeability and distribution shifts affect coverage](https://mapie.readthedocs.io/en/stable/content/exchangeability-testing/).
+Reproduce with scripts/cli.py notebook --phase 5. All confidential inputs and outputs remain Git-ignored. GARCH simulation follows [arch's documented recursion](https://arch.readthedocs.io/en/stable/univariate/forecasting.html). Conformal time-series assumptions follow the caution that [exchangeability and distribution shifts affect coverage](https://mapie.readthedocs.io/en/stable/content/exchangeability-testing/).
 """
     (out / "probabilistic_forecasting_report.md").write_text(report)
     return report

@@ -1,7 +1,7 @@
 """Run the Phase 3 feature build and paired baseline experiment.
 
 Usage:
-    uv run --locked python scripts/run_phase3.py
+    uv run --locked python scripts/cli.py phase 3
 
 Reads the authorized RM and energy workbooks and writes features, rolling
 predictions, baseline scores, exclusions, final September forecasts, figures and

@@ -5,7 +5,7 @@ base64 so it can be opened or shared as a single file. It is a presentation
 aid, not a new analysis.
 
 Usage:
-    uv run --locked python scripts/build_strategy_deck.py
+    uv run --locked python scripts/cli.py deck
 """
 
 from __future__ import annotations
@@ -53,11 +53,11 @@ def build():
             "horizon_m": "Horizon",
             "target_month": "Target",
             "bom_p90_index": "P90 index",
-            "recommended_price_adjustment_pct": "Adjustment",
+            "recommended_price_adjustment_pct": "Gross adjustment",
         }
     )
     offer_table = _table(
-        offer, ["Product", "Horizon", "Target", "P90 index", "Adjustment"]
+        offer, ["Product", "Horizon", "Target", "P90 index", "Gross adjustment"]
     )
 
     coverage_table = _table(
@@ -137,7 +137,7 @@ def build():
   <div class="grid g3">
     <div class="card"><div class="big">12</div><p>priceable materials</p></div>
     <div class="card"><div class="big">92.7%</div><p>RM6 BOM mass priced</p></div>
-    <div class="card"><div class="big">+7.7%</div><p>9-month RM6 risk adjustment</p></div>
+    <div class="card"><div class="big">+12.7%</div><p>9-month RM6 net adjustment</p></div>
   </div>
   <div class="foot">Decision support, not Schneider Electric policy. September 2026 origin.</div>
 </section>
@@ -167,7 +167,7 @@ def build():
     <div class="card"><h3>BOM index</h3><p>Monetary, not mass-weighted.
     Copper, aluminium, steel and epoxy.</p></div>
     <div class="card"><h3>Offer rule</h3><p>Adjustment by horizon, 50% tail
-    buffer, 3-month validity, 5% trigger.</p></div>
+    buffer, 1-month validity, 6.9%/10.4% trigger.</p></div>
     <div class="card"><h3>Strategy</h3><p>US, Middle East and APAC ex-China;
     data centres first.</p></div>
   </div>
@@ -206,7 +206,7 @@ def build():
   <h2>Mass would misstate the exposure</h2>
   <div class="grid g3">
     <div class="card"><div class="big">12.5%</div><p>Copper share of RM6 mass</p></div>
-    <div class="card"><div class="big">~50%</div><p>Copper share of priced material cost</p></div>
+    <div class="card"><div class="big">54%</div><p>Copper share of priced material cost</p></div>
     <div class="card"><div class="big">46.6%</div><p>Carbon steel share of RM6 mass</p></div>
   </div>
   {coverage_table}
@@ -219,16 +219,16 @@ def build():
   <p class="sub">adjustment = material share × (P50/100 − 1) + material share ×
   50% × (P90 − P50)/100</p>
   {offer_table}
-  <div class="foot">Material share: 80% RM6 and AirSeT. Working assumptions.</div>
+  <div class="foot">Gross buffer before the indexation clause. Material share: 80% RM6 and AirSeT; working assumptions.</div>
 </section>
 
 <section class="slide">
   <div class="kicker">Worked example</div>
   <h2>€10,000 RM6 quote, June 2027</h2>
   <div class="grid g3">
-    <div class="card"><div class="big">€767</div><p>material risk adjustment</p></div>
-    <div class="card"><div class="big">3 mo</div><p>quote validity</p></div>
-    <div class="card"><div class="big">5%</div><p>indexation trigger</p></div>
+    <div class="card"><div class="big">€1,270</div><p>net material risk adjustment</p></div>
+    <div class="card"><div class="big">1 mo</div><p>base quote validity</p></div>
+    <div class="card"><div class="big">6.9%</div><p>copper indexation trigger</p></div>
   </div>
   <p class="sub">If matching a competitor falls below the conservative margin
   floor (25% RM6, 20% AirSeT), do not match without changing scope or terms.</p>
